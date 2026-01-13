@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Upload, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +17,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { parsePDF } from "@/lib/pdf-parser";
 import { ParseResult } from "@/types";
 
@@ -118,6 +129,52 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           上传出入境记录
+          <HoverCard openDelayMs={120} closeDelayMs={120}>
+            <HoverCardTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                aria-label="如何下载出入境记录 PDF"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </button>
+            </HoverCardTrigger>
+
+            <HoverCardContent
+              align="start"
+              className="w-80 text-xs leading-relaxed"
+            >
+              <div className="font-medium text-slate-900">
+                如何下载出入境记录（PDF）
+              </div>
+              <div className="mt-2 space-y-2 text-slate-700">
+                <div className="flex gap-2">
+                  <div className="mt-0.5 text-slate-500">1.</div>
+                  <div>微信/支付宝 搜索 “出入境记录查询”</div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="mt-0.5 text-slate-500">2.</div>
+                  <div>填写身份信息并人脸识别登录</div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="mt-0.5 text-slate-500">3.</div>
+                  <div>选择查询人以及查询的时间范围</div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="mt-0.5 text-slate-500">4.</div>
+                  <div>下载查询结果（建议选择第一个：本地下载）</div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="mt-0.5 text-slate-500">5.</div>
+                  <div>将下载好的 PDF 文件上传</div>
+                </div>
+
+                <div className="pt-2 text-[11px] text-slate-500">
+                  提示：本网站仅在本地解析 PDF，不会上传到服务器。
+                </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         </CardTitle>
         <CardDescription>支持国家移民管理局导出的 PDF 文件</CardDescription>
       </CardHeader>

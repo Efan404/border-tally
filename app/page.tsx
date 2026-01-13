@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   FileText,
   Calendar,
@@ -23,6 +24,7 @@ import {
   User,
   AlertTriangle,
   AlertCircle,
+  Github,
 } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { ResultActions } from "@/components/result-actions";
@@ -128,13 +130,33 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="container mx-auto py-12 px-4 max-w-4xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            🌍 留学生出入境天数计算器
-          </h1>
-          {/*<p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            上传您的出入境记录，选择时间范围，快速计算境外停留天数
-          </p>*/}
+        <div className="mb-12">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="text-center sm:text-left">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                🌍 留学生出入境天数计算器
+              </h1>
+              {/*<p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                上传您的出入境记录，选择时间范围，快速计算境外停留天数
+              </p>*/}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="bg-white/60"
+              onClick={() => {
+                window.open(
+                  "https://github.com/Efan404/border-tally",
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+            >
+              <Github className="h-4 w-4" />
+              GitHub
+            </Button>
+          </div>
         </div>
 
         <div className="flex justify-center mb-8">
@@ -214,7 +236,8 @@ export default function Home() {
                   <CardDescription>
                     {validationResult.correctedCount > 0 && (
                       <span className="text-orange-700">
-                        已自动修正 {validationResult.correctedCount} 条记录的证件信息
+                        已自动修正 {validationResult.correctedCount}{" "}
+                        条记录的证件信息
                       </span>
                     )}
                   </CardDescription>
