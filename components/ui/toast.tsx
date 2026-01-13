@@ -32,10 +32,9 @@ import {
   toastBarClassName,
   ToastSuccessIcon,
   ToastDestructiveIcon,
+  type ToastVariant,
 } from "@/components/ui/radix/toast";
 import { cn } from "@/lib/utils";
-
-type ToastVariant = "default" | "success" | "destructive";
 
 export type ToastOptions = {
   id?: string;
