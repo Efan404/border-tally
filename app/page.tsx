@@ -4,8 +4,9 @@ import { useState, useMemo, useRef } from "react";
 import { PDFUpload } from "@/components/pdf-upload";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { ResultCard } from "@/components/result-card";
-import { ParseResult } from "@/types";
+import { ParseResult, DataValidationResult } from "@/types";
 import { calculateOverseasDays } from "@/lib/border-calculation";
+import { correctDocumentMatching } from "@/lib/data-correction";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
@@ -14,7 +15,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { FileText, Calendar, ArrowRight, Info, User } from "lucide-react";
+import {
+  FileText,
+  Calendar,
+  ArrowRight,
+  Info,
+  User,
+  AlertTriangle,
+  AlertCircle,
+} from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { ResultActions } from "@/components/result-actions";
 
@@ -32,6 +41,8 @@ function getDocFilterForCategory(category: StudentCategory) {
 
 export default function Home() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<DataValidationResult | null>(null);
 
   // Used for exporting the result card as an image
   const exportCardRef = useRef<HTMLDivElement | null>(null);
@@ -175,12 +186,69 @@ export default function Home() {
         <div className="mb-6">
           <PDFUpload
             onParseComplete={(r) => {
-              setParseResult(r);
-              // 更换文件后，重置时间范围，避免沿用旧范围导致“已计算”但其实不匹配新数据
+              if (r.success) {
+                // 执行证件修正和数据验证
+                const validated = correctDocumentMatching(r.records);
+                setValidationResult(validated);
+                setParseResult({ ...r, records: validated.correctedRecords });
+              } else {
+                setParseResult(r);
+                setValidationResult(null);
+              }
+              // 更换文件后，重置时间范围，避免沿用旧范围导致"已计算"但其实不匹配新数据
               setDateRange(undefined);
             }}
           />
         </div>
+
+        {validationResult &&
+          validationResult.issues.length > 0 &&
+          parseResult?.success && (
+            <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              <Card className="border-orange-200 bg-orange-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-800">
+                    <AlertTriangle className="h-5 w-5" />
+                    数据检查结果
+                  </CardTitle>
+                  <CardDescription>
+                    {validationResult.correctedCount > 0 && (
+                      <span className="text-orange-700">
+                        已自动修正 {validationResult.correctedCount} 条记录的证件信息
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+
+                <CardContent>
+                  <div className="space-y-3">
+                    {validationResult.issues.map((issue, idx) => (
+                      <Alert
+                        key={idx}
+                        className={
+                          issue.severity === "warning"
+                            ? "border-orange-300 bg-orange-50"
+                            : "border-blue-300 bg-blue-50"
+                        }
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <div className="font-medium text-sm">
+                            {issue.message}
+                          </div>
+                          {issue.suggestion && (
+                            <div className="text-xs mt-1 text-muted-foreground">
+                              💡 {issue.suggestion}
+                            </div>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
         <div className="mb-6">
           <Card className={!parseResult?.success ? "opacity-50" : ""}>
