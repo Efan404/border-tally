@@ -1,17 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { type PieSectorDataItem } from "recharts/types/polar/Pie";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
-import { Globe, CheckCircle, AlertCircle } from "lucide-react";
+import { Globe, Home, Car, Info } from "lucide-react";
 import { CalculationResult } from "@/types";
-import { format } from "date-fns";
 import { Label, Pie, PieChart, Sector } from "recharts";
 import {
   ChartContainer,
@@ -71,6 +70,32 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
   const targetDays = 270;
   const eligible = overseasDaysPast >= targetDays;
   const remainingDays = Math.max(0, targetDays - overseasDaysPast);
+
+  /**
+   * 上海落户资格（按学历分档）：
+   * - 本科：境外天数 >= 720
+   * - 硕士：>= 180
+   * - 博士：>= 360
+   *
+   * 说明：这里同样按“截至今日的境外天数（past）”判断；未来区间不计入。
+   */
+  const shanghaiRules = [
+    { label: "本科", threshold: 720 },
+    { label: "硕士", threshold: 180 },
+    { label: "博士", threshold: 360 },
+  ] as const;
+
+  type ShanghaiDegree = (typeof shanghaiRules)[number]["label"];
+  const [shanghaiDegree, setShanghaiDegree] = useState<ShanghaiDegree>("本科");
+
+  const selectedShanghaiRule =
+    shanghaiRules.find((r) => r.label === shanghaiDegree) ?? shanghaiRules[0];
+
+  const shanghaiEligible = overseasDaysPast >= selectedShanghaiRule.threshold;
+  const shanghaiRemainingDays = Math.max(
+    0,
+    selectedShanghaiRule.threshold - overseasDaysPast,
+  );
 
   // 准备图表数据
   const chartData = [
@@ -205,7 +230,8 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
         </ChartContainer>
 
         {/* 状态栏：左侧描边样式 */}
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
+          {/* 免税车申购资格 */}
           <div
             className={`rounded-lg p-4 flex items-start gap-3 ${
               eligible ? "bg-emerald-50/30" : "bg-orange-50/30"
@@ -214,17 +240,42 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
               borderLeft: `4px solid ${eligible ? "rgb(16 185 129)" : "rgb(249 115 22)"}`,
             }}
           >
-            {eligible ? (
-              <CheckCircle className="mt-0.5 h-5 w-5 text-emerald-600 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="mt-0.5 h-5 w-5 text-orange-600 flex-shrink-0" />
-            )}
+            <Car
+              className={`mt-0.5 h-5 w-5 flex-shrink-0 ${
+                eligible ? "text-emerald-600" : "text-orange-600"
+              }`}
+            />
 
             <div className="flex-1">
               <div className="flex items-center justify-between gap-4">
-                <div className="text-sm font-semibold text-slate-900">
-                  免税车申购资格
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold text-slate-900">
+                    免税车申购资格
+                  </div>
+
+                  <HoverCard openDelayMs={120} closeDelayMs={80}>
+                    <HoverCardTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                        aria-label="查看说明"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </HoverCardTrigger>
+
+                    <HoverCardContent
+                      align="end"
+                      className="text-xs leading-relaxed"
+                    >
+                      <div className="font-medium text-slate-900">说明</div>
+                      <div className="mt-1 text-slate-600">
+                        以截至今日的境外天数计算（未来区间不计入）。
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
                 </div>
+
                 <Badge
                   variant="outline"
                   className={
@@ -251,10 +302,112 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
                   天
                 </div>
               )}
+            </div>
+          </div>
 
-              <div className="mt-1 text-[11px] text-slate-400">
-                说明：以截至今日的境外天数计算（未来区间不计入）
+          {/* 上海落户资格 */}
+          <div
+            className={`rounded-lg p-4 flex items-start gap-3 ${
+              shanghaiEligible ? "bg-emerald-50/30" : "bg-orange-50/30"
+            }`}
+            style={{
+              borderLeft: `4px solid ${
+                shanghaiEligible ? "rgb(16 185 129)" : "rgb(249 115 22)"
+              }`,
+            }}
+          >
+            <Home
+              className={`mt-0.5 h-5 w-5 flex-shrink-0 ${
+                shanghaiEligible ? "text-emerald-600" : "text-orange-600"
+              }`}
+            />
+
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold text-slate-900">
+                    上海落户资格
+                  </div>
+
+                  <HoverCard openDelayMs={120} closeDelayMs={80}>
+                    <HoverCardTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                        aria-label="查看说明"
+                      >
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </HoverCardTrigger>
+
+                    <HoverCardContent
+                      align="end"
+                      className="text-xs leading-relaxed"
+                    >
+                      <div className="font-medium text-slate-900">说明</div>
+                      <div className="mt-1 text-slate-600">
+                        以截至今日的境外天数计算（未来区间不计入）。
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                </div>
+
+                <Badge
+                  variant="outline"
+                  className={
+                    shanghaiEligible
+                      ? "bg-emerald-100/70 text-emerald-800 border-emerald-300"
+                      : "bg-orange-100/70 text-orange-800 border-orange-300"
+                  }
+                >
+                  {shanghaiEligible ? "已达标" : "待达标"}
+                </Badge>
               </div>
+
+              {/* Degree selector (tabs-like segmented control) */}
+              <div className="mt-2 inline-flex rounded-md border border-blue-200/60 bg-white/50 p-1">
+                {shanghaiRules.map((r) => (
+                  <button
+                    key={r.label}
+                    type="button"
+                    onClick={() => setShanghaiDegree(r.label)}
+                    className={[
+                      "px-3 py-1 text-xs rounded-md transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+                      shanghaiDegree === r.label
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-700 hover:bg-white/70",
+                    ].join(" ")}
+                    aria-pressed={shanghaiDegree === r.label}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+
+              {shanghaiEligible ? (
+                <div className="mt-2 text-sm text-slate-700">
+                  恭喜！按{" "}
+                  <span className="font-semibold text-slate-900">
+                    {selectedShanghaiRule.label}
+                  </span>{" "}
+                  口径，您的境外停留时长已满足条件（≥{" "}
+                  {selectedShanghaiRule.threshold} 天）。
+                </div>
+              ) : (
+                <div className="mt-2 text-sm text-slate-700">
+                  按{" "}
+                  <span className="font-semibold text-slate-900">
+                    {selectedShanghaiRule.label}
+                  </span>{" "}
+                  口径，当前 {overseasDaysPast}/{selectedShanghaiRule.threshold}{" "}
+                  天，还需{" "}
+                  <span className="font-semibold text-orange-700">
+                    {shanghaiRemainingDays}
+                  </span>{" "}
+                  天
+                </div>
+              )}
             </div>
           </div>
         </div>
