@@ -27,78 +27,13 @@ import {
   ToastDescription as RadixToastDescription,
   ToastAction as RadixToastAction,
   ToastClose as RadixToastClose,
+  toastVariantClassName,
+  toastIconClassName,
+  toastBarClassName,
+  ToastSuccessIcon,
+  ToastDestructiveIcon,
 } from "@/components/ui/radix/toast";
-
 import { cn } from "@/lib/utils";
-
-function variantClassName(variant: ToastVariant | undefined) {
-  switch (variant) {
-    case "success":
-      return "border-emerald-200 bg-emerald-50/95 text-emerald-950 dark:border-emerald-900/35 dark:bg-emerald-950/80 dark:text-emerald-50";
-    case "destructive":
-      return "border-rose-200 bg-rose-50/95 text-rose-950 dark:border-rose-900/35 dark:bg-rose-950/80 dark:text-rose-50";
-    default:
-      return "border-slate-200 bg-white/95 text-slate-950 dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-50";
-  }
-}
-
-function iconClassName(variant: ToastVariant | undefined) {
-  switch (variant) {
-    case "success":
-      return "text-emerald-600 dark:text-emerald-300";
-    case "destructive":
-      return "text-rose-600 dark:text-rose-300";
-    default:
-      return "text-slate-600 dark:text-slate-300";
-  }
-}
-
-function barClassName(variant: ToastVariant | undefined) {
-  switch (variant) {
-    case "success":
-      return "bg-emerald-500/70 dark:bg-emerald-400/60";
-    case "destructive":
-      return "bg-rose-500/70 dark:bg-rose-400/60";
-    default:
-      return "bg-slate-500/40 dark:bg-slate-400/30";
-  }
-}
-
-function CheckIcon(props: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={props.className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
-}
-
-function AlertIcon(props: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={props.className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 9v4" />
-      <path d="M12 17h.01" />
-      <path d="M10.29 3.86l-8.32 14.4A2 2 0 0 0 3.7 21h16.6a2 2 0 0 0 1.73-2.74l-8.32-14.4a2 2 0 0 0-3.46 0z" />
-    </svg>
-  );
-}
 
 type ToastVariant = "default" | "success" | "destructive";
 
@@ -232,9 +167,9 @@ function ToastRow(props: { item: ToastItem; onDismiss: () => void }) {
 
   const Icon =
     item.variant === "success"
-      ? CheckIcon
+      ? ToastSuccessIcon
       : item.variant === "destructive"
-        ? AlertIcon
+        ? ToastDestructiveIcon
         : null;
 
   return (
@@ -244,20 +179,20 @@ function ToastRow(props: { item: ToastItem; onDismiss: () => void }) {
       onOpenChange={(next) => {
         if (!next) onDismiss();
       }}
-      className={cn(variantClassName(item.variant))}
+      className={cn(toastVariantClassName(item.variant))}
     >
       {/* Left accent bar */}
       <div
         className={cn(
           "absolute left-0 top-0 h-full w-1",
-          barClassName(item.variant),
+          toastBarClassName(item.variant),
         )}
       />
 
       <RadixToastRow className="p-4">
         {Icon ? (
           <div className="pt-0.5">
-            <Icon className={cn("h-5 w-5", iconClassName(item.variant))} />
+            <Icon className={cn("h-5 w-5", toastIconClassName(item.variant))} />
           </div>
         ) : null}
 
