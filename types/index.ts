@@ -46,3 +46,25 @@ export interface CalculationResult {
   overseasRecords: BorderRecord[];
   domesticRecords: BorderRecord[];
 }
+
+// 数据验证问题类型
+export type ValidationIssueType =
+  | "document_mismatch" // 证件不匹配（已修正）
+  | "same_day_multiple"; // 同一天多次出入境
+
+// 单条验证问题
+export interface ValidationIssue {
+  type: ValidationIssueType;
+  severity: "warning" | "info"; // warning需要用户注意，info仅提示已修正
+  recordIds: string[]; // 涉及的记录ID
+  message: string; // 友好的错误描述
+  suggestion?: string; // 建议的处理方法
+}
+
+// 数据验证和修正的结果
+export interface DataValidationResult {
+  correctedRecords: BorderRecord[]; // 修正后的记录
+  issues: ValidationIssue[]; // 检测到的问题列表
+  originalRecordsCount: number; // 原始记录数
+  correctedCount: number; // 被修正的记录数
+}
