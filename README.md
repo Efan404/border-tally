@@ -10,14 +10,14 @@
 - **数据可视化**：使用饼图直观展示境外、境内和未来时间分配
 - **免税车资格判定**：自动判断是否满足 270 天境外停留要求
 - **隐私保护**：纯前端处理，所有数据仅在浏览器中计算，不上传到任何服务器
-- **现代化 UI**：基于 shadcn/ui 构建，响应式设计，支持深色模式
+- **现代化 UI**：基于 shadcn/ui 风格的组件封装，并逐步引入 Radix UI primitives（稳定的交互 state machine），响应式设计，支持深色模式
 
 ## 🛠️ 技术栈
 
 - **框架**：[Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/)
 - **语言**：[TypeScript](https://www.typescriptlang.org/)
 - **样式**：[Tailwind CSS 4](https://tailwindcss.com/)
-- **UI 组件**：[shadcn/ui](https://ui.shadcn.com/)
+- **UI 组件**：[shadcn/ui](https://ui.shadcn.com/) + [Radix UI Primitives](https://www.radix-ui.com/primitives)
 - **图表**：[Recharts](https://recharts.org/)
 - **PDF 解析**：[pdf-parse](https://www.npmjs.com/package/pdf-parse)
 - **日期处理**：[date-fns](https://date-fns.org/)
@@ -79,7 +79,13 @@ border-tally/
 │   ├── layout.tsx         # 根布局
 │   └── page.tsx           # 主页面
 ├── components/            # React 组件
-│   ├── ui/               # shadcn/ui 基础组件
+│   ├── ui/               # UI 组件封装（shadcn 风格 + Radix primitives）
+│   │   ├── radix/        # Radix primitives 封装（渐进迁移）
+│   │   │   └── toast.tsx # Radix Toast primitives（Provider/Viewport/Root 等）
+│   │   ├── hover-card.tsx # HoverCard（基于 Radix HoverCard）
+│   │   ├── popover.tsx   # Popover（基于 Radix Popover）
+│   │   ├── toast.tsx     # toast()/useToast() API + Toaster（渲染层基于 Radix Toast）
+│   │   └── toaster.tsx   # App 级 Toaster 挂载点
 │   ├── pdf-upload.tsx    # PDF 上传组件
 │   ├── date-range-picker.tsx  # 日期选择器
 │   ├── result-card.tsx   # 结果展示卡片
@@ -100,6 +106,25 @@ pnpm test
 ```
 
 ## 📝 开发笔记
+
+### Radix UI 渐进迁移（HoverCard + Toast）
+
+本项目正在将高优先级交互组件渐进迁移到 **Radix UI Primitives**，以获得更稳定的交互 state machine（开关状态、延迟控制、dismiss、swipe、unmount 时机等）。
+
+当前已迁移/引入的组件：
+
+- **HoverCard**
+  - `components/ui/hover-card.tsx`
+  - 说明：改为基于 `@radix-ui/react-hover-card`，避免边界 hover 抖动导致的 flicker。
+- **Toast**
+  - `components/ui/toast.tsx`：保留 `toast({ ... })` / `useToast()` 的调用方式（对业务层无破坏），但渲染层使用 Radix Toast。
+  - `components/ui/radix/toast.tsx`：Radix Toast primitives 封装（`Provider` / `Viewport` / `Root` / `Title` / `Description` / `Action` / `Close` 等），并集中管理 toast 的 variant 样式与图标。
+
+设计原则（第一性原理）：
+
+- 当一个组件的主要复杂度来自 **交互状态机 + 可访问性语义 + 边界行为**（例如：open/close、延迟、焦点、dismiss、手势），优先使用 Radix primitives。
+- 纯展示型组件（如 Card/Badge 等）保持轻量封装即可，不强制替换。
+
 
 ### 时区处理
 
