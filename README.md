@@ -1,36 +1,147 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌍 留学生出入境天数计算器
 
-## Getting Started
+一个帮助留学生计算境外停留天数的工具，用于判断是否满足免税车申购资格。
 
-First, run the development server:
+## ✨ 功能特点
+
+- **PDF 解析**：自动解析国家移民管理局的出入境记录 PDF 文件
+- **智能计算**：精确计算境外停留天数，支持港澳通行证和普通护照两种证件类型
+- **数据可视化**：使用饼图直观展示境外、境内和未来时间分配
+- **免税车资格判定**：自动判断是否满足 270 天境外停留要求
+- **隐私保护**：纯前端处理，所有数据仅在浏览器中计算，不上传到任何服务器
+- **现代化 UI**：基于 shadcn/ui 构建，响应式设计，支持深色模式
+
+## 🛠️ 技术栈
+
+- **框架**：[Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/)
+- **语言**：[TypeScript](https://www.typescriptlang.org/)
+- **样式**：[Tailwind CSS 4](https://tailwindcss.com/)
+- **UI 组件**：[shadcn/ui](https://ui.shadcn.com/)
+- **图表**：[Recharts](https://recharts.org/)
+- **PDF 解析**：[pdf-parse](https://www.npmjs.com/package/pdf-parse)
+- **日期处理**：[date-fns](https://date-fns.org/)
+- **包管理器**：[pnpm](https://pnpm.io/)
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js 20+
+- pnpm 10+
+
+### 安装依赖
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 开发模式
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+访问 [http://localhost:3000](http://localhost:3000) 查看应用。
 
-## Learn More
+### 生产构建
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm build
+pnpm start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📖 使用说明
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **上传 PDF**：点击上传按钮，选择从国家移民管理局下载的出入境记录 PDF 文件
+2. **选择类型**：根据你的情况选择"港澳留学生"或"海外留学生"
+3. **选择时间范围**：设置学期开始和结束日期
+4. **查看结果**：系统会自动计算并显示：
+   - 境外停留天数（蓝色）
+   - 境内停留天数（棕灰色）
+   - 未来可用天数（紫色，如果毕业时间在未来）
+   - 免税车申购资格状态
 
-## Deploy on Vercel
+## 📊 免税车申购政策
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+根据中国海关规定，留学生申请购买免税车需要满足：
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **境外停留时间**：累计 ≥ 270 天（约 9 个月）
+- **回国时间**：毕业后首次入境日起 1 年内
+- **购车限制**：留学期间内每学习一年可购买一辆免税车
+
+## 🗂️ 项目结构
+
+```
+border-tally/
+├── app/                    # Next.js App Router 页面
+│   ├── globals.css        # 全局样式
+│   ├── layout.tsx         # 根布局
+│   └── page.tsx           # 主页面
+├── components/            # React 组件
+│   ├── ui/               # shadcn/ui 基础组件
+│   ├── pdf-upload.tsx    # PDF 上传组件
+│   ├── date-range-picker.tsx  # 日期选择器
+│   ├── result-card.tsx   # 结果展示卡片
+│   └── result-actions.tsx # 导出/分享按钮
+├── lib/                   # 工具函数
+│   ├── border-calculation.ts  # 境外天数计算逻辑
+│   ├── pdf-parser.ts     # PDF 解析逻辑
+│   └── utils.ts          # 通用工具
+├── types/                 # TypeScript 类型定义
+└── public/               # 静态资源
+```
+
+## 🧪 测试
+
+```bash
+pnpm test
+```
+
+## 📝 开发笔记
+
+### 时区处理
+
+项目中所有日期计算统一使用 **CST (UTC+8)** 时区，确保计算准确性：
+
+- 入境/出境记录统一转换为 CST 日期
+- 日期范围选择使用 CST 日历日
+- 天数计算采用"包含首尾"的逻辑
+
+### 证件类型区分
+
+- **港澳留学生**：仅统计"往来港澳通行证"的出入境记录
+- **海外留学生**：仅统计"普通护照"的出入境记录
+
+### 未来日期处理
+
+- 如果毕业日期在未来，系统会显示"未来可用"天数
+- 未来天数不计入境外/境内占比和免税车资格判定
+- 仅用于预估剩余可用学习时间
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📄 许可证
+
+本项目采用 [GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.html) 开源协议。
+
+这意味着：
+- ✅ 可以自由使用、修改和分发本项目
+- ✅ 可以用于商业目的
+- ⚠️ 修改后的代码必须同样以 GPL 协议开源
+- ⚠️ 必须保留原作者版权信息
+
+## 👨‍💻 作者
+
+[@efan404](https://github.com/efan404)
+
+## 🙏 致谢
+
+- [shadcn/ui](https://ui.shadcn.com/) - 优雅的 UI 组件库
+- [Recharts](https://recharts.org/) - 强大的图表库
+- [pdf-parse](https://gitlab.com/autokent/pdf-parse) - PDF 解析工具
+
+---
+
+**免责声明**：本工具仅供参考，结果以官方解释为准。使用本工具产生的任何后果，作者不承担任何责任。
