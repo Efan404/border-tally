@@ -1,0 +1,14 @@
+
+> border-tally@0.1.0 dev /Users/efan404/Codes/indie_dev/border-tally
+> next dev
+
+⚠ Port 3000 is in use by process 32326, using available port 3001 instead.
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://10.0.1.116:3001
+
+✓ Starting...
+⨯ Unable to acquire lock at /Users/efan404/Codes/indie_dev/border-tally/.next/dev/lock, is another instance of next dev running?
+  Suggestion: If you intended to restart next dev, terminate the other process, and then try again.
+[?25h
+ ELIFECYCLE  Command failed with exit code 1.

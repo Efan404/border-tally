@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Vendor/bundled assets (should not be linted)
+    "public/pdf.worker.mjs",
+
+    // Tooling config files used by Jest (CommonJS/require is fine there)
+    "jest.config.js",
+    "jest.config.ts",
   ]),
 ]);
 
