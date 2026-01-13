@@ -79,20 +79,104 @@ function intersectInclusiveCST(
   return { start, end };
 }
 
+/**
+ * 填充每一天的方式计算境外日期
+ *
+ * 算法：
+ * 1. 按证件分组（每个证件独立处理）
+ * 2. 每组内按时间顺序（从旧到新）遍历记录
+ * 3. 维护"当前是否在境外"状态
+ * 4. 如果在境外，把每一天都标记为境外日
+ * 5. 遇到出境：状态变为"在境外"
+ * 6. 遇到入境：状态变为"在境内"
+ */
+function fillOverseasDaysCST(
+  records: BorderRecord[],
+  todayCST: Date,
+): Set<string> {
+  const overseasDays = new Set<string>();
+
+  const keyOf = (r: BorderRecord) =>
+    `${r.documentNumber ?? ""}__${r.documentName ?? ""}`;
+
+  const groups = new Map<string, BorderRecord[]>();
+  for (const r of records) {
+    const k = keyOf(r);
+    const arr = groups.get(k);
+    if (arr) arr.push(r);
+    else groups.set(k, [r]);
+  }
+
+  for (const [, groupRecords] of groups) {
+    // 按序号排序：id 从大到小（从旧到新）
+    // PDF中的记录序号：1=最新，N=最旧
+    const chronological = [...groupRecords].sort((a, b) => {
+      const idA = parseInt(a.id) || 0;
+      const idB = parseInt(b.id) || 0;
+      return idB - idA; // 降序：从旧到新
+    });
+
+    let isAbroad = false;
+    let lastExitDate: Date | null = null;
+
+    for (const r of chronological) {
+      const d = parseRecordDateCST(r.date);
+
+      if (r.type === "出境") {
+        // 如果之前已经在境外，先填充从上次出境到这次出境前一天的所有日期
+        if (isAbroad && lastExitDate) {
+          let current = new Date(lastExitDate.getTime());
+          const dayBefore = addDaysCST(d, -1);
+          while (current.getTime() <= dayBefore.getTime()) {
+            overseasDays.add(formatDateCST(current));
+            current = addDaysCST(current, 1);
+          }
+        }
+
+        isAbroad = true;
+        lastExitDate = d;
+      } else if (r.type === "入境") {
+        // 填充从出境日到入境日（含）的所有日期
+        if (isAbroad && lastExitDate) {
+          let current = new Date(lastExitDate.getTime());
+          while (current.getTime() <= d.getTime()) {
+            overseasDays.add(formatDateCST(current));
+            current = addDaysCST(current, 1);
+          }
+        }
+
+        isAbroad = false;
+        lastExitDate = null;
+      }
+    }
+
+    // 如果最后还在境外，填充到今天
+    if (isAbroad && lastExitDate) {
+      let current = new Date(lastExitDate.getTime());
+      while (current.getTime() <= todayCST.getTime()) {
+        overseasDays.add(formatDateCST(current));
+        current = addDaysCST(current, 1);
+      }
+    }
+  }
+
+  return overseasDays;
+}
+
+function formatDateCST(d: Date): string {
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * 仅用于UI展示：判断某个日期是否在境外
+ */
 function buildAbroadSegmentsCST(
   records: BorderRecord[],
   todayCST: Date,
 ): Segment[] {
-  /**
-   * 关键改动（思路2）：
-   * - 不再依赖调用方传入的排序（newest->oldest / oldest->newest 都可以）
-   * - 为了避免不同证件（港澳通行证/护照/不同号码）混在一起导致“错配闭合”
-   *   产生超长境外段（例如被算出 292 天），在此函数内部做：
-   *   1) 按证件分组（documentNumber + documentName）
-   *   2) 组内按日期排序，且同日“出境”优先于“入境”
-   *   3) 分组各自配对成 segment，最后把所有 segment 做统一 merge
-   */
-
   const keyOf = (r: BorderRecord) =>
     `${r.documentNumber ?? ""}__${r.documentName ?? ""}`;
 
@@ -108,14 +192,9 @@ function buildAbroadSegmentsCST(
 
   for (const [, groupRecords] of groups) {
     const chronological = [...groupRecords].sort((a, b) => {
-      const da = parseRecordDateCST(a.date).getTime();
-      const db = parseRecordDateCST(b.date).getTime();
-      if (da !== db) return da - db;
-
-      // 同一天：先处理出境，再处理入境，这样“同日出+入”会形成 [d,d] = 1 天
-      if (a.type === b.type) return 0;
-      if (a.type === "出境") return -1;
-      return 1;
+      const idA = parseInt(a.id) || 0;
+      const idB = parseInt(b.id) || 0;
+      return idB - idA;
     });
 
     let openExit: Date | null = null;
@@ -133,54 +212,12 @@ function buildAbroadSegmentsCST(
       }
     }
 
-    // 该证件最后仍在境外：开段到 todayCST
     if (openExit) {
       allSegments.push({ exit: openExit, entry: null });
     }
   }
 
-  // Normalize: ensure exit <= entry if entry exists
-  const normalized = allSegments
-    .map((s) => {
-      if (s.entry && s.entry.getTime() < s.exit.getTime()) {
-        return { exit: s.entry, entry: s.exit };
-      }
-      return s;
-    })
-    .sort((a, b) => a.exit.getTime() - b.exit.getTime());
-
-  // Merge overlaps/touches to avoid double counting (cross-document segments can overlap in pathological data)
-  const merged: Segment[] = [];
-  for (const s of normalized) {
-    const end = s.entry ?? todayCST;
-
-    if (merged.length === 0) {
-      merged.push(s);
-      continue;
-    }
-
-    const last = merged[merged.length - 1];
-    const lastEnd = last.entry ?? todayCST;
-
-    // If current starts on/before lastEnd + 1 day, merge.
-    if (s.exit.getTime() <= lastEnd.getTime() + MS_PER_DAY) {
-      const newEnd = new Date(Math.max(lastEnd.getTime(), end.getTime()));
-
-      // If either segment is open-ended and the merged end reaches todayCST, keep it open-ended.
-      const open =
-        newEnd.getTime() === todayCST.getTime() &&
-        (last.entry === null || s.entry === null);
-
-      merged[merged.length - 1] = {
-        exit: last.exit,
-        entry: open ? null : newEnd,
-      };
-    } else {
-      merged.push(s);
-    }
-  }
-
-  return merged;
+  return allSegments;
 }
 
 export function calculateOverseasDays(
@@ -195,22 +232,21 @@ export function calculateOverseasDays(
   // Define "today" in CST date-only for open-ended segments
   const todayCST = toCSTDateOnly(new Date());
 
-  /**
-   * 思路2核心：计算函数内部兜底
-   * - records 可乱序
-   * - records 可包含多个证件（不同 documentNumber/documentName）
-   * - 先分组再配对，避免跨证件错配造成超长境外段（例如 292 天）
-   */
-  const segments = buildAbroadSegmentsCST(records, todayCST);
+  // 使用"填充每一天"的方式计算境外日期
+  const overseasDays = fillOverseasDaysCST(records, todayCST);
 
-  // Count overlap days between [queryStart, queryEnd] and each segment (inclusive)
+  // 统计查询范围内有多少天在境外
   let totalOverseasDays = 0;
-  for (const s of segments) {
-    const segStart = s.exit;
-    const segEnd = s.entry ?? todayCST;
-    const ix = intersectInclusiveCST(queryStart, queryEnd, segStart, segEnd);
-    if (ix) totalOverseasDays += daysInclusiveCST(ix.start, ix.end);
+  let current = new Date(queryStart.getTime());
+  while (current.getTime() <= queryEnd.getTime()) {
+    if (overseasDays.has(formatDateCST(current))) {
+      totalOverseasDays++;
+    }
+    current = addDaysCST(current, 1);
   }
+
+  // 构建段用于判断记录分类（overseasRecords vs domesticRecords）
+  const segments = buildAbroadSegmentsCST(records, todayCST);
 
   // Classify records within query range for UI listing
   const recordsInRange = records.filter((r) => {

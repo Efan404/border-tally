@@ -122,8 +122,6 @@ function extractBorderRecords(tableResult: unknown): BorderRecord[] {
     }
   }
 
-  // 按日期正序排列
-  return records.sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
+  // 保持PDF原始顺序（序号1=最新，序号N=最旧）
+  return records;
 }
