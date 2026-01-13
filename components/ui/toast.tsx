@@ -29,9 +29,7 @@ import {
   ToastClose as RadixToastClose,
 } from "@/components/ui/radix/toast";
 
-function cn(...xs: Array<string | false | null | undefined>) {
-  return xs.filter(Boolean).join(" ");
-}
+import { cn } from "@/lib/utils";
 
 function variantClassName(variant: ToastVariant | undefined) {
   switch (variant) {
@@ -274,11 +272,7 @@ function ToastRow(props: { item: ToastItem; onDismiss: () => void }) {
           {item.action ? (
             <div className="mt-3">
               <RadixToastAction
-                altText={
-                  typeof item.action.label === "string"
-                    ? item.action.label
-                    : "Action"
-                }
+                altText={item.action.label}
                 onClick={() => {
                   item.action?.onClick?.();
                   onDismiss();
