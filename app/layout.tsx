@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "出入境记录分析 - Border Tally",
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body className="antialiased font-sans">
         {children}
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
