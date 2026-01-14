@@ -187,14 +187,14 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
   type EligibilityCard = {
     key: string;
     title: string;
-    icon: JSX.Element;
+    icon: React.ReactNode;
     eligible: boolean;
     badgeText: string;
     badgeClassName: string;
     containerClassName: string;
     borderLeftColor: string;
     helpText: string;
-    body: JSX.Element;
+    body: React.ReactNode;
   };
 
   const eligibilityCards: EligibilityCard[] = [
