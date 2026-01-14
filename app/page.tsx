@@ -201,7 +201,7 @@ export default function Home() {
           <Info className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-700">
             🔒
-            纯前端处理：所有数据仅在您的浏览器中解析和计算，不会上传到任何服务器
+            隐私保护：所有数据仅在本地浏览器中解析和计算，网页代码开源透明，无任何数据上传行为。
           </AlertDescription>
         </Alert>
 
@@ -425,7 +425,14 @@ export default function Home() {
           )}
 
         <div className="text-center mt-12 text-sm text-gray-500">
-          <p>@efan404</p>
+          <a
+            href="https://efan404.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-gray-700 hover:underline"
+          >
+            @efan404
+          </a>
         </div>
       </div>
     </main>

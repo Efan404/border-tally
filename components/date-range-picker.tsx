@@ -11,13 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DateRange } from "react-day-picker";
 
 function pad2(n: number) {
@@ -205,9 +199,8 @@ export function DateRangePicker({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
-          设定留学期间
+          设定时间范围
         </CardTitle>
-        <CardDescription>请确认您的在校学习时间</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -231,7 +224,7 @@ export function DateRangePicker({
               ].join(" ")}
               title="从开始日期起，加 12 个月"
             >
-              1年制（+12个月）
+              1年制(+12个月)
             </button>
             <button
               type="button"
@@ -246,7 +239,23 @@ export function DateRangePicker({
               ].join(" ")}
               title="从开始日期起，加 18 个月"
             >
-              1.5年制（+18个月）
+              1.5年制(+18个月)
+            </button>
+
+            <button
+              type="button"
+              disabled={disabled || !from}
+              onClick={() => applyQuickDuration(48)}
+              className={[
+                "rounded-full border px-2.5 py-1 text-xs transition-colors",
+                disabled || !from
+                  ? "cursor-not-allowed opacity-50"
+                  : "hover:bg-white/60",
+                "border-blue-200/60 bg-white/30 text-slate-700",
+              ].join(" ")}
+              title="从开始日期起，加 48 个月"
+            >
+              4年制(+48个月)
             </button>
           </div>
         </div>
