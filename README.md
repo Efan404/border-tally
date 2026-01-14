@@ -1,181 +1,106 @@
-# 🌍 留学生出入境天数计算器
+# Border Tally（出入境记录自动计算）
 
-一个帮助留学生计算境外停留天数的工具，用于判断是否满足免税车申购资格。
+Border Tally 是一个**纯前端**工具：上传「国家移民管理局」下载的出入境记录 PDF 后，自动解析并计算你在指定时间范围内的**境外停留天数**，并以可视化方式展示结果与明细，帮助你快速核对出入境数据。
 
-## ✨ 功能特点
-
-- **PDF 解析**：自动解析国家移民管理局的出入境记录 PDF 文件
-- **智能计算**：精确计算境外停留天数，支持港澳通行证和普通护照两种证件类型
-- **数据修正**：自动检测并修正证件不匹配问题，提示同日多次出入境情况
-- **数据可视化**：使用饼图直观展示境外、境内和未来时间分配
-- **免税车资格判定**：自动判断是否满足 270 天境外停留要求
-- **隐私保护**：纯前端处理，所有数据仅在浏览器中计算，不上传到任何服务器
-- **现代化 UI**：基于 shadcn/ui 风格的组件封装，并逐步引入 Radix UI primitives（稳定的交互 state machine），响应式设计，支持深色模式
-
-## 🛠️ 技术栈
-
-- **框架**：[Next.js 16](https://nextjs.org/) + [React 19](https://react.dev/)
-- **语言**：[TypeScript](https://www.typescriptlang.org/)
-- **样式**：[Tailwind CSS 4](https://tailwindcss.com/)
-- **UI 组件**：[shadcn/ui](https://ui.shadcn.com/) + [Radix UI Primitives](https://www.radix-ui.com/primitives)
-- **图表**：[Recharts](https://recharts.org/)
-- **PDF 解析**：[pdf-parse](https://www.npmjs.com/package/pdf-parse)
-- **日期处理**：[date-fns](https://date-fns.org/)
-- **包管理器**：[pnpm](https://pnpm.io/)
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Node.js 20+
-- pnpm 10+
-
-### 安装依赖
-
-```bash
-pnpm install
-```
-
-### 开发模式
-
-```bash
-pnpm dev
-```
-
-访问 [http://localhost:3000](http://localhost:3000) 查看应用。
-
-### 生产构建
-
-```bash
-pnpm build
-pnpm start
-```
-
-## 📖 使用说明
-
-1. **上传 PDF**：点击上传按钮，选择从国家移民管理局下载的出入境记录 PDF 文件
-2. **选择类型**：根据你的情况选择"港澳留学生"或"海外留学生"
-3. **选择时间范围**：设置学期开始和结束日期
-4. **查看结果**：系统会自动计算并显示：
-   - 境外停留天数（蓝色）
-   - 境内停留天数（棕灰色）
-   - 未来可用天数（紫色，如果毕业时间在未来）
-   - 免税车申购资格状态
-
-## 📊 免税车申购政策
-
-根据中国海关规定，留学生申请购买免税车需要满足：
-
-- **境外停留时间**：累计 ≥ 270 天（约 9 个月）
-- **回国时间**：毕业后首次入境日起 1 年内
-- **购车限制**：留学期间内每学习一年可购买一辆免税车
-
-## 🗂️ 项目结构
-
-```
-border-tally/
-├── app/                    # Next.js App Router 页面
-│   ├── globals.css        # 全局样式
-│   ├── layout.tsx         # 根布局
-│   └── page.tsx           # 主页面
-├── components/            # React 组件
-│   ├── ui/               # UI 组件封装（shadcn 风格 + Radix primitives）
-│   │   ├── radix/        # Radix primitives 封装（渐进迁移）
-│   │   │   └── toast.tsx # Radix Toast primitives（Provider/Viewport/Root 等）
-│   │   ├── hover-card.tsx # HoverCard（基于 Radix HoverCard）
-│   │   ├── popover.tsx   # Popover（基于 Radix Popover）
-│   │   ├── toast.tsx     # toast()/useToast() API + Toaster（渲染层基于 Radix Toast）
-│   │   └── toaster.tsx   # App 级 Toaster 挂载点
-│   ├── pdf-upload.tsx    # PDF 上传组件
-│   ├── date-range-picker.tsx  # 日期选择器
-│   ├── result-card.tsx   # 结果展示卡片
-│   └── result-actions.tsx # 导出/分享按钮
-├── lib/                   # 工具函数
-│   ├── border-calculation.ts  # 境外天数计算逻辑
-│   ├── data-correction.ts     # 数据修正和验证逻辑
-│   ├── pdf-parser.ts     # PDF 解析逻辑
-│   └── utils.ts          # 通用工具
-├── types/                 # TypeScript 类型定义
-└── public/               # 静态资源
-```
-
-## 🧪 测试
-
-```bash
-pnpm test
-```
-
-## 📝 开发笔记
-
-### Radix UI 渐进迁移（HoverCard + Toast）
-
-本项目正在将高优先级交互组件渐进迁移到 **Radix UI Primitives**，以获得更稳定的交互 state machine（开关状态、延迟控制、dismiss、swipe、unmount 时机等）。
-
-当前已迁移/引入的组件：
-
-- **HoverCard**
-  - `components/ui/hover-card.tsx`
-  - 说明：改为基于 `@radix-ui/react-hover-card`，避免边界 hover 抖动导致的 flicker。
-- **Toast**
-  - `components/ui/toast.tsx`：保留 `toast({ ... })` / `useToast()` 的调用方式（对业务层无破坏），但渲染层使用 Radix Toast。
-  - `components/ui/radix/toast.tsx`：Radix Toast primitives 封装（`Provider` / `Viewport` / `Root` / `Title` / `Description` / `Action` / `Close` 等），并集中管理 toast 的 variant 样式与图标。
-
-设计原则（第一性原理）：
-
-- 当一个组件的主要复杂度来自 **交互状态机 + 可访问性语义 + 边界行为**（例如：open/close、延迟、焦点、dismiss、手势），优先使用 Radix primitives。
-- 纯展示型组件（如 Card/Badge 等）保持轻量封装即可，不强制替换。
-
-
-### 时区处理
-
-项目中所有日期计算统一使用 **CST (UTC+8)** 时区，确保计算准确性：
-
-- 入境/出境记录统一转换为 CST 日期
-- 日期范围选择使用 CST 日历日
-- 天数计算采用"包含首尾"的逻辑
-
-### 证件类型区分
-
-- **港澳留学生**：仅统计"往来港澳通行证"的出入境记录
-- **海外留学生**：仅统计"普通护照"的出入境记录
-- 每种证件类型独立计算，避免跨证件混淆
-
-### 数据修正机制
-
-- **证件匹配修正**：使用栈结构进行出入境配对，自动修正证件不匹配
-- **异常检测**：检测同日多次出入境等特殊情况
-- **算法优化**：采用"逐日填充"方式计算境外天数，准确处理同日多次出入境
-
-### 未来日期处理
-
-- 如果毕业日期在未来，系统会显示"未来可用"天数
-- 未来天数不计入境外/境内占比和免税车资格判定
-- 仅用于预估剩余可用学习时间
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📄 许可证
-
-本项目采用 [GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.html) 开源协议。
-
-这意味着：
-- ✅ 可以自由使用、修改和分发本项目
-- ✅ 可以用于商业目的
-- ⚠️ 修改后的代码必须同样以 GPL 协议开源
-- ⚠️ 必须保留原作者版权信息
-
-## 👨‍💻 作者
-
-[@efan404](https://github.com/efan404)
-
-## 🙏 致谢
-
-- [shadcn/ui](https://ui.shadcn.com/) - 优雅的 UI 组件库
-- [Recharts](https://recharts.org/) - 强大的图表库
-- [pdf-parse](https://gitlab.com/autokent/pdf-parse) - PDF 解析工具
+> 说明：本项目的核心目标是 **出入境记录的自动解析与天数计算**。页面中出现的“资格判断”仅作为常见需求的附加展示，不作为产品定位的中心。
 
 ---
 
-**免责声明**：本工具仅供参考，结果以官方解释为准。使用本工具产生的任何后果，作者不承担任何责任。
+## 功能介绍
+
+- **PDF 自动解析**：直接上传出入境记录 PDF，自动提取出入境日期、口岸、证件信息等
+- **境外停留天数自动计算**：在你设定的时间范围内，计算境外停留天数（并展示境内停留、未来区间等辅助信息）
+- **口岸概览（最常去的口岸 TOP3）**：在结果卡片“背面”查看时间范围内最常出现的口岸，并用交通方式图标辅助识别
+- **数据修正与提示**：
+  - 自动处理证件不匹配等常见问题
+  - 提示同日多次出入境等情况，便于人工核对
+- **隐私保护**：所有计算在浏览器本地完成，不上传到服务器
+
+---
+
+## 使用说明
+
+1. **准备 PDF**
+   - 从「国家移民管理局」相关入口下载你的出入境记录 PDF
+
+2. **上传 PDF**
+   - 打开网页后上传 PDF 文件，系统会自动解析并展示可用的记录
+
+3. **设定时间范围**
+   - 在「设定时间范围」中选择开始/结束日期
+   - 可使用快捷选项快速生成常见跨度（例如 1 年、1.5 年、4 年等）
+
+4. **查看结果**
+   - 正面：查看“境外/境内”天数占比与结果摘要
+   - 背面：点击“查看口岸”，查看**最常去的口岸** TOP3
+
+5. **（可选）导出/分享**
+   - 页面提供导出图片等操作（如你需要用于存档或提交材料）
+
+---
+
+## 境外停留天数：计算口径（重要）
+
+为避免时区与边界日导致的偏差，本项目统一采用 **中国标准时间 CST（UTC+8）的“日历日”语义**进行计算。
+
+### 1) 日期语义
+- PDF 中的日期为 `YYYY-MM-DD`，按 **CST 日历日**理解
+- 你在界面选择的日期范围同样按 **CST 日历日**理解
+- 所有天数计算都在“date-only”空间进行，避免本地时区差造成的 +1/-1
+
+### 2) 境外段定义（出境～入境）
+- 一次“境外停留段”为：`[出境日, 入境日]`
+- **首尾都计入**（inclusive）
+  - 例如：同一天出境并入境，该段计为 **1 天**
+- 若最后一条记录为“出境”（表示仍在境外），则该段从出境日一直计到 **今日（CST）**（同样包含当日）
+
+### 3) 多证件口径
+- 出入境记录会按证件维度分组计算（例如护照、港澳通行证等）
+- 不同证件的数据不会互相“串段”导致误算
+
+### 4) 时间范围裁剪（仅统计你选择的区间）
+- 最终统计仅计算你设定的 `[开始日, 结束日]` 区间内的境外天数
+- 超出区间的天数不计入
+
+---
+
+## 开源库与致谢
+
+本项目使用/参考了以下开源库（排名不分先后）：
+
+- **Radix UI**：可访问性良好的交互组件基础（HoverCard / Dialog / Toast 等）
+- **shadcn/ui**：UI 组件风格与封装参考
+- **Recharts**：图表可视化（饼图等）
+- **pdf-parse**：PDF 文本解析
+- **date-fns**：日期处理与格式化
+- **lucide-react**：图标
+
+---
+
+## 项目结构（关键文件）
+
+```
+border-tally/
+├─ app/
+│  ├─ layout.tsx                 # 应用布局
+│  └─ page.tsx                   # 主页面
+├─ components/
+│  ├─ date-range-picker.tsx      # 设定时间范围（含快捷选项）
+│  ├─ pdf-upload.tsx             # PDF 上传与解析入口
+│  ├─ result-card.tsx            # 结果卡片（含“正面/背面”与口岸 TOP3）
+│  ├─ result-actions.tsx         # 导出/分享相关操作
+│  └─ ui/                        # UI 组件封装（含 Radix primitives）
+├─ lib/
+│  ├─ border-calculation.ts      # 境外天数计算（核心口径、时区语义）
+│  ├─ data-correction.ts         # 数据修正与问题提示
+│  └─ pdf-parser.ts              # PDF 解析逻辑
+├─ types/
+│  └─ index.ts                   # 类型定义（BorderRecord 等）
+└─ public/                       # 静态资源
+```
+
+---
+
+## 免责声明
+
+本工具仅用于个人核对与辅助计算，结果仅供参考；请以官方口径与最终解释为准。项目作者不对使用本工具产生的任何后果承担责任。

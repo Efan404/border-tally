@@ -7,6 +7,7 @@ import {
   CheckCircle,
   AlertCircle,
   HelpCircle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,13 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogDrawerContent,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { parsePDF } from "@/lib/pdf-parser";
 import { ParseResult } from "@/types";
 
@@ -129,52 +137,116 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           上传出入境记录
-          <HoverCard openDelayMs={120} closeDelayMs={120}>
-            <HoverCardTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                aria-label="如何下载出入境记录 PDF"
+          {/* Desktop: HoverCard (quick preview) */}
+          <div className="hidden sm:block">
+            <HoverCard openDelayMs={120} closeDelayMs={120}>
+              <HoverCardTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  aria-label="如何下载出入境记录 PDF"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </HoverCardTrigger>
+
+              <HoverCardContent
+                align="start"
+                className="w-80 text-xs leading-relaxed"
               >
-                <HelpCircle className="h-4 w-4" />
-              </button>
-            </HoverCardTrigger>
+                <div className="font-medium text-slate-900">
+                  如何下载出入境记录（PDF）
+                </div>
+                <div className="mt-2 space-y-2 text-slate-700">
+                  <div className="flex gap-2">
+                    <div className="mt-0.5 text-slate-500">1.</div>
+                    <div>微信/支付宝 搜索 “出入境记录查询”</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="mt-0.5 text-slate-500">2.</div>
+                    <div>填写身份信息并人脸识别登录</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="mt-0.5 text-slate-500">3.</div>
+                    <div>选择查询人以及查询的时间范围</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="mt-0.5 text-slate-500">4.</div>
+                    <div>下载查询结果（建议选择第一个：本地下载）</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="mt-0.5 text-slate-500">5.</div>
+                    <div>将下载好的 PDF 文件上传</div>
+                  </div>
 
-            <HoverCardContent
-              align="start"
-              className="w-80 text-xs leading-relaxed"
-            >
-              <div className="font-medium text-slate-900">
-                如何下载出入境记录（PDF）
-              </div>
-              <div className="mt-2 space-y-2 text-slate-700">
-                <div className="flex gap-2">
-                  <div className="mt-0.5 text-slate-500">1.</div>
-                  <div>微信/支付宝 搜索 “出入境记录查询”</div>
+                  <div className="pt-2 text-[11px] text-slate-500">
+                    提示：本网站仅在本地解析 PDF，不会上传到服务器。
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <div className="mt-0.5 text-slate-500">2.</div>
-                  <div>填写身份信息并人脸识别登录</div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="mt-0.5 text-slate-500">3.</div>
-                  <div>选择查询人以及查询的时间范围</div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="mt-0.5 text-slate-500">4.</div>
-                  <div>下载查询结果（建议选择第一个：本地下载）</div>
-                </div>
-                <div className="flex gap-2">
-                  <div className="mt-0.5 text-slate-500">5.</div>
-                  <div>将下载好的 PDF 文件上传</div>
+              </HoverCardContent>
+            </HoverCard>
+          </div>
+          {/* Mobile: Drawer-like Dialog (better for long content & tapping) */}
+          <div className="sm:hidden">
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  aria-label="如何下载出入境记录 PDF"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              </DialogTrigger>
+
+              <DialogDrawerContent side="bottom" className="p-0">
+                <div className="flex items-center justify-between border-b px-5 py-4">
+                  <DialogTitle className="text-base">
+                    如何下载出入境记录（PDF）
+                  </DialogTitle>
+
+                  <DialogClose asChild>
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100/80 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      aria-label="关闭"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </DialogClose>
                 </div>
 
-                <div className="pt-2 text-[11px] text-slate-500">
-                  提示：本网站仅在本地解析 PDF，不会上传到服务器。
+                <div className="max-h-[70vh] overflow-auto px-5 py-4 text-sm text-slate-700">
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="mt-0.5 text-slate-500">1.</div>
+                      <div>微信/支付宝 搜索 “出入境记录查询”</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="mt-0.5 text-slate-500">2.</div>
+                      <div>填写身份信息并人脸识别登录</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="mt-0.5 text-slate-500">3.</div>
+                      <div>选择查询人以及查询的时间范围</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="mt-0.5 text-slate-500">4.</div>
+                      <div>下载查询结果（建议选择第一个：本地下载）</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="mt-0.5 text-slate-500">5.</div>
+                      <div>将下载好的 PDF 文件上传</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                    提示：本网站仅在本地解析 PDF，不会上传到服务器。
+                  </div>
                 </div>
-              </div>
-            </HoverCardContent>
-          </HoverCard>
+              </DialogDrawerContent>
+            </Dialog>
+          </div>
         </CardTitle>
         <CardDescription>支持国家移民管理局导出的 PDF 文件</CardDescription>
       </CardHeader>
