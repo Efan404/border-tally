@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { PDFUpload } from "@/components/pdf-upload";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { ResultCard } from "@/components/result-card";
@@ -424,15 +424,32 @@ export default function Home() {
             </div>
           )}
 
-        <div className="text-center mt-12 text-sm text-gray-500">
+        <div className="mt-12 flex flex-col items-center gap-4">
+          {/*<div className="text-sm text-gray-500">支持我继续维护这个小工具</div>*/}
+
           <a
-            href="https://efan404.com/"
+            href="https://ko-fi.com/D1D81SN76C"
             target="_blank"
             rel="noreferrer"
-            className="hover:text-gray-700 hover:underline"
           >
-            @efan404
+            <img
+              height="36"
+              style={{ border: 0, height: 36 }}
+              src="https://storage.ko-fi.com/cdn/kofi5.png?v=6"
+              alt="Buy Me a Coffee at ko-fi.com"
+            />
           </a>
+
+          <div className="text-center text-sm text-gray-500">
+            <a
+              href="https://efan404.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-gray-700 hover:underline"
+            >
+              @efan404
+            </a>
+          </div>
         </div>
       </div>
     </main>
