@@ -378,20 +378,10 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
     <Card className="bg-white border-gray-200 shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-blue-800 text-base sm:text-lg">
+          <CardTitle className="flex items-center gap-1.5 sm:gap-2 text-blue-800 text-sm sm:text-lg shrink-0">
             <Globe className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="whitespace-nowrap">
-              {view === "front" ? (
-                <>
-                  <span className="hidden sm:inline">境外停留分析</span>
-                  <span className="sm:hidden">境外分析</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">口岸概览</span>
-                  <span className="sm:hidden">口岸</span>
-                </>
-              )}
+              {view === "front" ? "境外停留分析" : "口岸概览"}
             </span>
           </CardTitle>
 
@@ -400,34 +390,23 @@ export function ResultCard({ result, dateRange, futureDays }: ResultCardProps) {
               <Badge
                 variant="outline"
                 title="毕业时间在未来：未来天数不会计入境外/境内占比，仅作为预计剩余展示。"
-                className="bg-white/60 text-blue-700 border-blue-200 text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5"
+                className="bg-white/60 text-blue-700 border-blue-200 text-[9px] sm:text-xs px-1 sm:px-2.5 py-0.5 whitespace-nowrap"
               >
-                <span className="hidden sm:inline">含未来区间</span>
-                <span className="sm:hidden">未来</span>
+                含未来区间
               </Badge>
             )}
 
             <button
               type="button"
               onClick={() => setView((v) => (v === "front" ? "back" : "front"))}
-              className="inline-flex items-center gap-1 sm:gap-2 rounded-md border border-blue-200 bg-white/60 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-blue-700 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-2 rounded-md border border-blue-200 bg-white/60 px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-sm text-blue-700 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 whitespace-nowrap shrink-0"
               aria-pressed={view === "back"}
               aria-label={
                 view === "front" ? "查看口岸概览" : "返回境外停留分析"
               }
             >
               <ArrowLeftRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              {view === "front" ? (
-                <>
-                  <span className="hidden sm:inline">查看口岸</span>
-                  <span className="sm:hidden">口岸</span>
-                </>
-              ) : (
-                <>
-                  <span className="hidden sm:inline">返回分析</span>
-                  <span className="sm:hidden">返回</span>
-                </>
-              )}
+              {view === "front" ? "查看口岸" : "返回分析"}
             </button>
           </div>
         </div>
