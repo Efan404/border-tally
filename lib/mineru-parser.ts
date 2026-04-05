@@ -220,7 +220,9 @@ async function pollTaskResult(
  * 获取 Markdown 内容
  */
 async function fetchMarkdownContent(url: string): Promise<string> {
-  const response = await fetch(url);
+  const response = await fetch(
+    `${MINERU_PROXY_URL}/markdown?url=${encodeURIComponent(url)}`
+  );
   if (!response.ok) {
     throw new Error(`下载 Markdown 失败: HTTP ${response.status}`);
   }
