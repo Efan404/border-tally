@@ -365,6 +365,194 @@ describe("pdf-text-parser / extractBorderRecordsFromText", () => {
     });
   });
 
+  describe("multi-line format parsing", () => {
+    test("should parse records in multi-line format (fields on separate lines)", () => {
+      const text = `
+国家移民管理局
+出入境记录查询结果（电子文件）
+编号：E260327441099
+
+查询日期：2026年03月27日
+
+查询人姓名: 李某某 ，性别: 男 ，出生日期: 1990年01月01日 ，
+公民身份号码: 110101199001011234 ，通过国家移民管理局出入境记录查询系统查询，
+
+序号
+出境/入境
+出入境日期
+证件名称
+证件号码
+出入境口岸
+
+1
+入境
+2026-03-27
+往来港澳通行证
+TEST1234567
+皇岗口岸
+
+2
+出境
+2026-03-26
+往来港澳通行证
+TEST1234567
+福田口岸
+
+3
+入境
+2026-03-26
+往来港澳通行证
+TEST1234567
+福田口岸
+      `;
+
+      const records = extractBorderRecordsFromText(text);
+
+      expect(records).toHaveLength(3);
+      
+      expect(records[0]).toMatchObject({
+        id: "1",
+        type: "入境",
+        date: "2026-03-27",
+        documentName: "往来港澳通行证",
+        documentNumber: "TEST1234567",
+        port: "皇岗口岸",
+      });
+
+      expect(records[1]).toMatchObject({
+        id: "2",
+        type: "出境",
+        date: "2026-03-26",
+        port: "福田口岸",
+      });
+    });
+
+    test("should parse multi-line format with flight numbers", () => {
+      const text = `
+91
+出境
+2025-02-17
+普通护照
+TEST9999
+深圳机场
+HU714
+
+92
+入境
+2025-02-09
+普通护照
+TEST9999
+深圳机场
+ZH661
+      `;
+
+      const records = extractBorderRecordsFromText(text);
+
+      expect(records).toHaveLength(2);
+      expect(records[0].flightNumber).toBe("HU714");
+      expect(records[1].flightNumber).toBe("ZH661");
+    });
+
+    test("should parse multi-page multi-line format correctly", () => {
+      const text = `
+26
+出境
+2026-01-08
+往来港澳通行证
+TEST1234
+皇岗口岸
+
+27
+入境
+2026-01-08
+往来港澳通行证
+TEST1234
+深圳湾口岸
+
+第 1 页 / 共 4 页
+
+28
+出境
+2026-01-02
+往来港澳通行证
+TEST1234
+深圳湾口岸
+
+29
+入境
+2026-01-02
+往来港澳通行证
+TEST1234
+西九龙口岸
+
+65
+入境
+2025-08-22
+往来港澳通行证
+TEST1234
+福田口岸
+
+第 2 页 / 共 4 页
+
+66
+出境
+2025-08-21
+往来港澳通行证
+TEST1234
+皇岗口岸
+
+67
+入境
+2025-08-16
+往来港澳通行证
+TEST1234
+深圳湾口岸
+      `;
+
+      const records = extractBorderRecordsFromText(text);
+
+      expect(records).toHaveLength(7);
+      
+      // Verify records that would be lost in table parsing
+      const ids = records.map((r) => r.id);
+      expect(ids).toContain("28");
+      expect(ids).toContain("66");
+    });
+
+    test("should handle mixed document types in multi-line format", () => {
+      const text = `
+85
+入境
+2025-07-14
+普通护照
+PASS1234
+福田口岸
+
+86
+出境
+2025-05-21
+普通护照
+PASS1234
+杭州机场
+
+87
+入境
+2025-04-24
+往来港澳通行证
+HKB1234
+皇岗口岸
+      `;
+
+      const records = extractBorderRecordsFromText(text);
+
+      expect(records).toHaveLength(3);
+      expect(records[0].documentName).toBe("普通护照");
+      expect(records[0].documentNumber).toBe("PASS1234");
+      expect(records[2].documentName).toBe("往来港澳通行证");
+      expect(records[2].documentNumber).toBe("HKB1234");
+    });
+  });
+
   describe("real-world scenario", () => {
     test("should parse the problematic PDF correctly", () => {
       // This is a simulated extraction of the actual problematic PDF

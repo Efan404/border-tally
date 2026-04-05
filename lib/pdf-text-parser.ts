@@ -3,20 +3,134 @@ import { BorderRecord, QueryPersonInfo } from "@/types";
 /**
  * 从 PDF 文本中提取出入境记录
  * 使用文本解析而非表格解析，避免跨页表格导致的记录丢失问题
+ * 
+ * 支持两种格式：
+ * 1. 单行格式：序号 类型 日期 证件名 证件号 口岸 [航班号]
+ * 2. 多行格式：每条记录字段分行显示
  */
 export function extractBorderRecordsFromText(text: string): BorderRecord[] {
-  const records: BorderRecord[] = [];
-  const lines = text.split("\n");
+  // 首先尝试检测格式类型
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  
+  // 检测是否为多行格式（字段分行显示）
+  // 特征：连续的纯数字行（序号）后面跟着"出境/入境"
+  const isMultiLineFormat = detectMultiLineFormat(lines);
+  
+  if (isMultiLineFormat) {
+    return extractRecordsFromMultiLineFormat(lines);
+  }
+  
+  return extractRecordsFromSingleLineFormat(lines);
+}
 
+/**
+ * 检测是否为多行格式（每条记录字段分行显示）
+ */
+function detectMultiLineFormat(lines: string[]): boolean {
+  // 查找符合多行格式特征的模式
+  // 例如：纯数字行（序号）后紧跟"入境"或"出境"
+  let sequentialMatches = 0;
+  
+  for (let i = 0; i < lines.length - 1; i++) {
+    const current = lines[i];
+    const next = lines[i + 1];
+    
+    // 检查是否是 序号 + 类型 的模式
+    if (/^\d+$/.test(current) && /^(出境|入境)$/.test(next)) {
+      sequentialMatches++;
+      if (sequentialMatches >= 2) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * 从多行格式提取记录
+ * 格式示例：
+ * 1
+ * 入境
+ * 2026-03-27
+ * 往来港澳通行证
+ * CD4787529
+ * 皇岗口岸
+ */
+function extractRecordsFromMultiLineFormat(lines: string[]): BorderRecord[] {
+  const records: BorderRecord[] = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // 查找记录起始行（纯数字序号）
+    if (!/^\d+$/.test(line)) continue;
+    
+    const id = line;
+    const type = lines[i + 1];
+    const date = lines[i + 2];
+    const documentName = lines[i + 3];
+    const documentNumber = lines[i + 4];
+    const port = lines[i + 5];
+    
+    // 验证各字段
+    if (
+      !type || !/^(出境|入境)$/.test(type) ||
+      !date || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !documentName ||
+      !documentNumber ||
+      !port
+    ) {
+      continue;
+    }
+    
+    // 检查下一行是否为航班号或下一条记录的序号
+    let flightNumber: string | undefined;
+    const nextLine = lines[i + 6];
+    
+    if (nextLine && !/^\d+$/.test(nextLine) && !isHeaderLine(nextLine)) {
+      // 可能是航班号或口岸续行
+      if (isPortContinuation(nextLine)) {
+        // 口岸名称续行
+        // 不需要额外处理，因为口岸名通常不会跨行在这种格式中
+      } else if (/^[A-Z]{2}\d+/.test(nextLine)) {
+        // 航班号格式：如 HU714, ZH661
+        flightNumber = nextLine;
+      }
+    }
+    
+    records.push({
+      id,
+      type: type as "出境" | "入境",
+      date,
+      documentName,
+      documentNumber,
+      port,
+      flightNumber,
+    });
+  }
+  
+  // 按序号排序
+  records.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
+  
+  return records;
+}
+
+/**
+ * 从单行格式提取记录
+ * 格式：序号 类型 日期 证件名 证件号 口岸 [航班号]
+ */
+function extractRecordsFromSingleLineFormat(lines: string[]): BorderRecord[] {
+  const records: BorderRecord[] = [];
+  
   // 用于处理跨行口岸名称的缓冲区
   let pendingLine: string | null = null;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
 
-    // 跳过空行和表头行
-    if (!line || isHeaderLine(line)) {
-      // 如果之前有挂起的行，尝试处理它
+    // 跳过表头行
+    if (isHeaderLine(line)) {
       if (pendingLine) {
         const record = tryParseRecord(pendingLine);
         if (record) {
@@ -29,7 +143,6 @@ export function extractBorderRecordsFromText(text: string): BorderRecord[] {
 
     // 尝试解析为记录行
     if (isRecordLine(line)) {
-      // 如果之前有挂起的行，先处理它
       if (pendingLine) {
         const record = tryParseRecord(pendingLine);
         if (record) {
@@ -63,7 +176,7 @@ export function extractBorderRecordsFromText(text: string): BorderRecord[] {
     }
   }
 
-  // 按序号排序（确保顺序正确）
+  // 按序号排序
   records.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
 
   return records;
@@ -73,21 +186,16 @@ export function extractBorderRecordsFromText(text: string): BorderRecord[] {
  * 尝试解析记录行
  */
 function tryParseRecord(line: string): BorderRecord | null {
-  // 标准化空白字符
   const normalizedLine = line.trim().replace(/\s+/g, " ");
   return parseRecordLine(normalizedLine);
 }
 
 /**
  * 判断是否为口岸名称的续行
- * 通常是单行短文本，不包含完整记录的特征
  */
 function isPortContinuation(line: string): boolean {
-  // 如果这一行是简单的文本（如"岸"），可能是口岸名称的续行
   const trimmed = line.trim();
-  // 续行通常很短（1-3个字符），且不包含数字、日期等记录特征
   if (trimmed.length > 0 && trimmed.length <= 4) {
-    // 检查是否只包含中文字符（口岸名称的一部分）
     return /^[\u4e00-\u9fa5]+$/.test(trimmed);
   }
   return false;
@@ -102,10 +210,20 @@ export function extractPersonInfoFromText(text: string): QueryPersonInfo {
   const birthDateMatch = text.match(/出生日期[：:]\s*(\d{4}年\d{1,2}月\d{1,2}日)/);
   const idNumberMatch = text.match(/公民身份号码[：:]\s*([\d*]+)/);
 
-  // 尝试从第一条记录获取证件号码
-  const firstRecordMatch = text.match(
+  // 尝试从文本中提取证件号码
+  // 先尝试匹配单行格式的第一条记录
+  let firstRecordMatch = text.match(
     /\d+\s+(?:出境|入境)\s+\d{4}-\d{2}-\d{2}\s+\S+\s+(\w+)\s+/,
   );
+  
+  // 如果没找到，尝试多行格式
+  if (!firstRecordMatch) {
+    // 多行格式：序号后的第4行是证件号
+    const multiLineMatch = text.match(/^(\d+)\s*\n\s*(?:出境|入境)\s*\n\s*\d{4}-\d{2}-\d{2}\s*\n\s*\S+\s*\n\s*(\w+)/m);
+    if (multiLineMatch) {
+      firstRecordMatch = multiLineMatch;
+    }
+  }
 
   return {
     name: nameMatch?.[1] || "未知",
@@ -120,7 +238,6 @@ export function extractPersonInfoFromText(text: string): QueryPersonInfo {
  * 判断是否为表头行
  */
 function isHeaderLine(line: string): boolean {
-  // 匹配表头关键词
   const headerPatterns = [
     /^序号\s+出境\/入境/,
     /^(?:出境\/入境|出入境日期|证件名称|证件号码|出入境口岸)$/,
@@ -135,6 +252,9 @@ function isHeaderLine(line: string): boolean {
     /年期间有下列出入境记录/,
     /^\d+\.本电子文件/,
     /^制作日期[：:]/,
+    /^类纸质文件/,
+    /^在差错或者缺漏/,
+    /^航班号$/,
   ];
 
   return headerPatterns.some((pattern) => pattern.test(line));
@@ -145,12 +265,9 @@ function isHeaderLine(line: string): boolean {
  * 格式：序号 出境/入境 日期 证件名 证件号 口岸 [航班号]
  */
 export function isRecordLine(line: string): boolean {
-  // 必须匹配的记录行模式
-  // 序号(数字) + 类型(出境/入境) + 日期(YYYY-MM-DD) + 证件名 + 证件号 + 口岸
   const recordPattern =
     /^\d+\s+(出境|入境)\s+\d{4}-\d{2}-\d{2}\s+\S+\s+\S+\s+\S+/;
 
-  // 排除表头误判
   if (line.includes("出境/入境") && line.includes("出入境日期")) {
     return false;
   }
@@ -162,11 +279,8 @@ export function isRecordLine(line: string): boolean {
  * 解析单条记录行
  */
 export function parseRecordLine(line: string): BorderRecord | null {
-  // 标准化空白字符
   const normalizedLine = line.trim().replace(/\s+/g, " ");
   
-  // 解析各字段
-  // 格式: 序号 类型 日期 证件名 证件号 口岸 [航班号]
   const match = normalizedLine.match(
     /^(\d+)\s+(出境|入境)\s+(\d{4}-\d{2}-\d{2})\s+(\S+)\s+(\S+)\s+(\S+)(?:\s+(\S+))?$/,
   );
