@@ -448,30 +448,23 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
               <AlertCircle className="h-5 w-5 text-amber-500" />
               确认使用增强解析？
             </DialogTitle>
-            <DialogDescription className="space-y-3 pt-2">
-              <span className="block">
-                增强解析会将您的 PDF 文件上传至{" "}
-                <a
-                  href="https://mineru.net/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                  MinerU
-                  <ExternalLink className="h-3 w-3" />
-                </a>{" "}
-                服务器进行处理。
-              </span>
-              <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
-                <div className="font-medium mb-1">请注意：</div>
-                <ul className="list-disc list-inside space-y-1 text-amber-700">
-                  <li>您的出入境记录数据将被上传到第三方服务器</li>
-                  <li>解析过程需要 10-60 秒，请耐心等待</li>
-                  <li>如担心隐私问题，请取消并使用本地解析模式</li>
-                </ul>
-              </div>
+            <DialogDescription>
+              增强解析会将您的 PDF 文件上传至 MinerU 服务器进行处理
             </DialogDescription>
           </DialogHeader>
+
+          {/* 提示内容放在 DialogHeader 外面，避免嵌套在 p 标签中 */}
+          <div className="space-y-3 py-4">
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+              <div className="font-medium mb-1">请注意：</div>
+              <ul className="list-disc list-inside space-y-1 text-amber-700">
+                <li>您的出入境记录数据将被上传到第三方服务器</li>
+                <li>解析过程需要 10-60 秒，请耐心等待</li>
+                <li>如担心隐私问题，请取消并使用本地解析模式</li>
+              </ul>
+            </div>
+          </div>
+
           <DialogFooter className="flex-row sm:flex-row gap-2">
             <Button variant="outline" onClick={handleMinerUCancel} className="flex-1">
               取消，使用本地解析
