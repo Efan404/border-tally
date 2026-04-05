@@ -1,5 +1,9 @@
 import { PDFParse } from "pdf-parse";
 import { BorderRecord, ParseResult, QueryPersonInfo } from "@/types";
+import {
+  extractBorderRecordsFromText,
+  extractPersonInfoFromText,
+} from "./pdf-text-parser";
 
 // 本地托管 worker（public/ 下的静态资源）
 // 已复制到：public/pdf.worker.mjs
@@ -30,13 +34,14 @@ export async function parsePDF(file: File): Promise<ParseResult> {
     const buffer = await file.arrayBuffer();
     pdf = new PDFParse({ data: new Uint8Array(buffer) });
 
-    // 提取表格数据
-    const tableResult = await pdf.getTable();
-    const records = extractBorderRecords(tableResult);
-
-    // 提取文本数据用于获取查询人信息
+    // 使用文本解析而非表格解析，避免跨页表格导致的记录丢失问题
+    // 参考: https://github.com/user/project/issues/xxx
     const textResult = await pdf.getText();
-    const personInfo = extractPersonInfo(textResult.pages[0]?.text || "");
+    const fullText = textResult.pages.map((p) => p.text).join("\n");
+
+    // 使用文本解析提取记录和个人信息
+    const records = extractBorderRecordsFromText(fullText);
+    const personInfo = extractPersonInfoFromText(fullText);
 
     await pdf.destroy();
     pdf = null;
@@ -56,7 +61,7 @@ export async function parsePDF(file: File): Promise<ParseResult> {
       records,
     };
   } catch (error) {
-    // 在开发阶段把真实错误带出来，避免一律显示“文件损坏”误导排查
+    // 在开发阶段把真实错误带出来，避免一律显示"文件损坏"误导排查
     const detail =
       error instanceof Error
         ? `${error.name}: ${error.message}`
@@ -77,51 +82,4 @@ export async function parsePDF(file: File): Promise<ParseResult> {
       // ignore
     }
   }
-}
-
-function extractPersonInfo(text: string): QueryPersonInfo {
-  const nameMatch = text.match(/查询人姓名：(\S+)/);
-  const birthDateMatch = text.match(/出生日期：(\d{4}年\d{1,2}月\d{1,2}日)/);
-  const idNumberMatch = text.match(/公民身份号码：(\d+\*{0,}\d+)/);
-  const docNumberMatch = text.match(/证件号码：(\w+)/);
-
-  return {
-    name: nameMatch?.[1] || "未知",
-    birthDate: birthDateMatch?.[1] || undefined,
-    idNumber: idNumberMatch?.[1] || undefined,
-    documentNumber: docNumberMatch?.[1] || "",
-  };
-}
-
-function extractBorderRecords(tableResult: unknown): BorderRecord[] {
-  const records: BorderRecord[] = [];
-
-  const tr = tableResult as {
-    pages: Array<{
-      tables: Array<string[][]>;
-    }>;
-  };
-
-  for (const page of tr.pages) {
-    for (const table of page.tables) {
-      // 跳过表头行
-      for (let i = 1; i < table.length; i++) {
-        const row = table[i];
-        if (row.length >= 6) {
-          records.push({
-            id: row[0],
-            type: row[1] as "出境" | "入境",
-            date: row[2],
-            documentName: row[3],
-            documentNumber: row[4],
-            port: row[5],
-            flightNumber: row[6] || undefined,
-          });
-        }
-      }
-    }
-  }
-
-  // 保持PDF原始顺序（序号1=最新，序号N=最旧）
-  return records;
 }
