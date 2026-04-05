@@ -197,14 +197,6 @@ export default function Home() {
           </div>
         </div>
 
-        <Alert className="mb-8 bg-blue-50 border-blue-200">
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-700">
-            🔒
-            隐私保护：所有数据仅在本地浏览器中解析和计算，网页代码开源透明，无任何数据上传行为。
-          </AlertDescription>
-        </Alert>
-
         <div className="mb-6">
           <PDFUpload
             onParseComplete={(r) => {
