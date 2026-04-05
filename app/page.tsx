@@ -168,7 +168,7 @@ export default function Home() {
               className={`flex items-center gap-1 sm:gap-2 ${parseResult ? "text-primary" : "text-gray-400"}`}
             >
               <FileText className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">上传</span>
+              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">上传文件</span>
             </div>
 
             <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300" />
@@ -177,7 +177,7 @@ export default function Home() {
               className={`flex items-center gap-1 sm:gap-2 ${parseResult?.success ? "text-primary" : "text-gray-400"}`}
             >
               <User className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">身份</span>
+              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">选择身份</span>
             </div>
 
             <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300" />
@@ -186,7 +186,7 @@ export default function Home() {
               className={`flex items-center gap-1 sm:gap-2 ${dateRange?.from && dateRange?.to ? "text-primary" : "text-gray-400"}`}
             >
               <Calendar className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">时间</span>
+              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">选择时间</span>
             </div>
 
             <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300" />
@@ -195,7 +195,7 @@ export default function Home() {
               className={`flex items-center gap-1 sm:gap-2 ${showResult ? "text-primary" : "text-gray-400"}`}
             >
               <FileText className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">结果</span>
+              <span className="text-[10px] sm:text-sm font-medium whitespace-nowrap">查看结果</span>
             </div>
           </div>
         </div>
