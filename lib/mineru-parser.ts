@@ -158,7 +158,7 @@ async function uploadFileToOSS(file: File, uploadUrl: string): Promise<boolean> 
 async function pollTaskResult(
   taskId: string,
   timeout: number = 120000, // 默认2分钟超时
-  interval: number = 3000, // 每3秒轮询一次
+  interval: number = 10000, // 每10秒轮询一次
 ): Promise<MinerUTaskResult> {
   const startTime = Date.now();
 
@@ -204,12 +204,12 @@ async function pollTaskResult(
         default:
           // 继续轮询
           console.log(`[mineru-parser] ${stateLabels[state] || state}...`);
-          await sleep(interval);
+          await sleep(getMinerUPollInterval(Date.now() - startTime, interval));
           break;
       }
     } catch (error) {
       console.error("[mineru-parser] Polling error:", error);
-      await sleep(interval);
+      await sleep(getMinerUPollInterval(Date.now() - startTime, interval));
     }
   }
 
@@ -227,6 +227,13 @@ async function fetchMarkdownContent(url: string): Promise<string> {
     throw new Error(`下载 Markdown 失败: HTTP ${response.status}`);
   }
   return response.text();
+}
+
+export function getMinerUPollInterval(
+  _elapsedMs: number,
+  baseInterval: number = 10000,
+): number {
+  return baseInterval;
 }
 
 /**

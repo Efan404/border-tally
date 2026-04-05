@@ -41,6 +41,13 @@ export async function GET(request: NextRequest) {
 
     const markdown = await response.text();
 
+    console.info("[MinerU Proxy] Markdown fetched", {
+      host: markdownUrl.hostname,
+      pathname: markdownUrl.pathname,
+      status: response.status,
+      size: markdown.length,
+    });
+
     return new Response(markdown, {
       status: 200,
       headers: {

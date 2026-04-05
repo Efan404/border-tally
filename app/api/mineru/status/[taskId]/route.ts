@@ -22,6 +22,15 @@ export async function GET(
     );
 
     const data = await response.json();
+    const state = data?.data?.state;
+    const hasMarkdownUrl = Boolean(data?.data?.markdown_url);
+
+    console.info("[MinerU Proxy] Status fetched", {
+      taskId,
+      state,
+      hasMarkdownUrl,
+      status: response.status,
+    });
     
     return Response.json(data, {
       status: response.status,

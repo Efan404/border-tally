@@ -132,7 +132,10 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
 
   const handleMinerUConfirm = () => {
     if (pendingFile) {
-      doParseFile(pendingFile, true);
+      const file = pendingFile;
+      setShowMinerUConfirm(false);
+      setPendingFile(null);
+      void doParseFile(file, true);
     }
   };
 
@@ -386,9 +389,12 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
           {isLoading ? (
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="text-sm text-muted-foreground">
-                {useMinerU ? "正在使用增强解析，请稍候..." : "正在解析文件..."}
-              </p>
+              <p className="text-sm text-muted-foreground">正在解析文件...</p>
+              {useMinerU ? (
+                <p className="text-xs text-muted-foreground">
+                  增强解析已开启，通常需要 10-60 秒
+                </p>
+              ) : null}
             </div>
           ) : success ? (
             <div className="flex flex-col gap-4">
