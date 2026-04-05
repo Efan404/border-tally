@@ -133,8 +133,10 @@ export default function Home() {
         <div className="mb-12">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="text-center sm:text-left">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                🌍 留学生出入境天数计算器
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                <span className="mr-1 sm:mr-2">🌍</span>
+                <span className="hidden sm:inline">留学生出入境天数计算器</span>
+                <span className="sm:hidden">出入境天数计算器</span>
               </h1>
               {/*<p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 上传您的出入境记录，选择时间范围，快速计算境外停留天数
@@ -159,40 +161,41 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center gap-4">
+        {/* 步骤导航 - 移动端 2x2 网格，桌面端水平排列 */}
+        <div className="flex justify-center mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-4">
             <div
               className={`flex items-center gap-2 ${parseResult ? "text-primary" : "text-gray-400"}`}
             >
-              <FileText className="h-5 w-5" />
-              <span className="text-sm font-medium">上传文件</span>
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-medium">上传文件</span>
             </div>
 
-            <ArrowRight className="h-4 w-4 text-gray-300" />
+            <ArrowRight className="hidden sm:block h-4 w-4 text-gray-300" />
 
             <div
               className={`flex items-center gap-2 ${parseResult?.success ? "text-primary" : "text-gray-400"}`}
             >
-              <User className="h-5 w-5" />
-              <span className="text-sm font-medium">选择身份</span>
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-medium">选择身份</span>
             </div>
 
-            <ArrowRight className="h-4 w-4 text-gray-300" />
+            <ArrowRight className="hidden sm:block h-4 w-4 text-gray-300" />
 
             <div
               className={`flex items-center gap-2 ${dateRange?.from && dateRange?.to ? "text-primary" : "text-gray-400"}`}
             >
-              <Calendar className="h-5 w-5" />
-              <span className="text-sm font-medium">选择时间</span>
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-medium">选择时间</span>
             </div>
 
-            <ArrowRight className="h-4 w-4 text-gray-300" />
+            <ArrowRight className="hidden sm:block h-4 w-4 text-gray-300" />
 
             <div
               className={`flex items-center gap-2 ${showResult ? "text-primary" : "text-gray-400"}`}
             >
-              <FileText className="h-5 w-5" />
-              <span className="text-sm font-medium">查看结果</span>
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-medium">查看结果</span>
             </div>
           </div>
         </div>

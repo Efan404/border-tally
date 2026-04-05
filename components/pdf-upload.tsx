@@ -440,36 +440,43 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         )}
       </CardContent>
 
-      {/* MinerU 确认对话框 */}
+      {/* MinerU 确认对话框 - 优化移动端适配 */}
       <Dialog open={showMinerUConfirm} onOpenChange={setShowMinerUConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
+        <DialogContent className="sm:max-w-[425px] max-w-[95vw] p-4 sm:p-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
               确认使用增强解析？
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               增强解析会将您的 PDF 文件上传至 MinerU 服务器进行处理
             </DialogDescription>
           </DialogHeader>
 
           {/* 提示内容放在 DialogHeader 外面，避免嵌套在 p 标签中 */}
-          <div className="space-y-3 py-4">
-            <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
-              <div className="font-medium mb-1">请注意：</div>
-              <ul className="list-disc list-inside space-y-1 text-amber-700">
-                <li>您的出入境记录数据将被上传到第三方服务器</li>
-                <li>解析过程需要 10-60 秒，请耐心等待</li>
-                <li>如担心隐私问题，请取消并使用本地解析模式</li>
+          <div className="py-3 sm:py-4">
+            <div className="rounded-md bg-amber-50 border border-amber-200 p-2.5 sm:p-3 text-xs sm:text-sm text-amber-800">
+              <div className="font-semibold mb-1.5 sm:mb-2">⚠️ 请注意：</div>
+              <ul className="list-disc list-outside ml-3.5 sm:ml-4 space-y-1 text-amber-700 leading-relaxed">
+                <li>数据将上传到第三方服务器处理</li>
+                <li>解析需 10-60 秒，请耐心等待</li>
+                <li>担心隐私请取消并使用本地模式</li>
               </ul>
             </div>
           </div>
 
-          <DialogFooter className="flex-row sm:flex-row gap-2">
-            <Button variant="outline" onClick={handleMinerUCancel} className="flex-1">
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button 
+              variant="outline" 
+              onClick={handleMinerUCancel} 
+              className="w-full sm:flex-1 text-xs sm:text-sm h-9 sm:h-10"
+            >
               取消，使用本地解析
             </Button>
-            <Button onClick={handleMinerUConfirm} className="flex-1">
+            <Button 
+              onClick={handleMinerUConfirm} 
+              className="w-full sm:flex-1 text-xs sm:text-sm h-9 sm:h-10"
+            >
               确认上传并解析
             </Button>
           </DialogFooter>
