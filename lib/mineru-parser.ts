@@ -115,17 +115,37 @@ async function getUploadUrl(
 
 /**
  * PUT 上传文件到 OSS
- * 注意：不要设置 Content-Type header，否则会导致 403 错误
+ * 使用后端代理绕过浏览器 CORS 限制
  */
 async function uploadFileToOSS(file: File, uploadUrl: string): Promise<boolean> {
   try {
-    const response = await fetch(uploadUrl, {
-      method: "PUT",
-      body: file,
-      // 不设置任何 headers，让浏览器自动处理
+    // 将文件转换为 base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce(
+        (data, byte) => data + String.fromCharCode(byte),
+        ''
+      )
+    );
+
+    // 通过代理上传
+    const response = await fetch(`${MINERU_PROXY_URL}/proxy-upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fileUrl: uploadUrl,
+        fileData: base64,
+      }),
     });
 
-    return response.status === 200 || response.status === 201;
+    if (!response.ok) {
+      return false;
+    }
+
+    const result = await response.json();
+    return result.success;
   } catch (error) {
     console.error("[mineru-parser] Upload to OSS failed:", error);
     return false;
