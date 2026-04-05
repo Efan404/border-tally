@@ -347,28 +347,6 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
           </div>
         </div>
 
-        {/* 隐私提示 */}
-        <div
-          className={`rounded-lg border px-3 py-2 text-xs ${
-            useMinerU
-              ? "border-amber-200 bg-amber-50/50 text-amber-800"
-              : "border-green-200 bg-green-50/50 text-green-800"
-          }`}
-        >
-          <div className="flex items-start gap-2">
-            {useMinerU ? (
-              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            ) : (
-              <Shield className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            )}
-            <span>
-              {useMinerU
-                ? "增强解析模式：PDF 内容将被上传至 MinerU 服务器处理，确认后继续"
-                : "本地解析模式：所有数据仅在浏览器本地处理，不会上传到任何服务器"}
-            </span>
-          </div>
-        </div>
-
         <div
           onClick={() => {
             if (!isLoading) openFilePicker();
