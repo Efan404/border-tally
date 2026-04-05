@@ -23,7 +23,7 @@ interface MinerUTaskResult {
 
 /**
  * 使用 MinerU API 解析 PDF 文件
- * 流程：1. 获取签名上传URL -> 2. PUT上传文件 -> 3. 轮询查询结果
+ * 流程：1. 获取签名上传URL -> 2. PUT 上传文件 -> 3. 轮询查询结果
  */
 export async function parsePDFWithMinerU(
   file: File,
@@ -49,7 +49,7 @@ export async function parsePDFWithMinerU(
       return { success: false, error: uploadInfo.error };
     }
 
-    // 步骤2：PUT 上传文件
+    // 步骤2：PUT 上传文件（不要设置 Content-Type）
     const uploadSuccess = await uploadFileToOSS(
       file,
       uploadInfo.fileUrl!,
@@ -113,15 +113,14 @@ async function getUploadUrl(
 
 /**
  * PUT 上传文件到 OSS
+ * 注意：不要设置 Content-Type header，否则会导致 403 错误
  */
 async function uploadFileToOSS(file: File, uploadUrl: string): Promise<boolean> {
   try {
     const response = await fetch(uploadUrl, {
       method: "PUT",
       body: file,
-      headers: {
-        "Content-Type": file.type || "application/pdf",
-      },
+      // 不设置任何 headers，让浏览器自动处理
     });
 
     return response.status === 200 || response.status === 201;
@@ -207,19 +206,106 @@ async function fetchMarkdownContent(url: string): Promise<string> {
 }
 
 /**
- * 从 MinerU 返回的 Markdown 中提取出入境记录
+ * 从 MinerU 返回的 Markdown/HTML 中提取出入境记录
+ * MinerU 返回的是 HTML 表格格式，不是 Markdown 表格
  */
 export function extractRecordsFromMarkdown(markdown: string): BorderRecord[] {
   const records: BorderRecord[] = [];
+
+  // 首先尝试解析 HTML 表格（MinerU 实际返回的格式）
+  const htmlRecords = parseHtmlTable(markdown);
+  if (htmlRecords.length > 0) {
+    return htmlRecords;
+  }
+
+  // 回退到 Markdown 表格解析
+  return parseMarkdownTable(markdown);
+}
+
+/**
+ * 解析 HTML 表格
+ * MinerU 返回格式: <table><tr><td>...</td></tr>...</table>
+ */
+function parseHtmlTable(html: string): BorderRecord[] {
+  const records: BorderRecord[] = [];
+
+  // 匹配所有 table 标签中的内容
+  const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+  let tableMatch;
+
+  while ((tableMatch = tableRegex.exec(html)) !== null) {
+    const tableContent = tableMatch[1];
+    
+    // 匹配所有行
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let rowMatch;
+    let isFirstRow = true;
+
+    while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
+      const rowContent = rowMatch[1];
+
+      // 提取所有单元格内容
+      const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+      const cells: string[] = [];
+      let cellMatch;
+
+      while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
+        // 去除 HTML 标签并清理文本
+        const cellText = cellMatch[1]
+          .replace(/<[^>]+>/g, '') // 去除内部 HTML 标签
+          .trim();
+        cells.push(cellText);
+      }
+
+      // 跳过表头行
+      if (isFirstRow) {
+        isFirstRow = false;
+        if (cells[0] === "序号" || cells[0] === "\u5e8f\u53f7") {
+          continue;
+        }
+      }
+
+      // 解析记录行（至少需要6个字段）
+      if (cells.length >= 6) {
+        const [id, type, date, documentName, documentNumber, port, flightNumber] = cells;
+        
+        // 验证数据格式
+        if (
+          /^\d+$/.test(id) &&
+          /^(出境|入境)$/.test(type) &&
+          /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ) {
+          records.push({
+            id,
+            type: type as "出境" | "入境",
+            date,
+            documentName,
+            documentNumber,
+            port,
+            flightNumber: flightNumber || undefined,
+          });
+        }
+      }
+    }
+  }
+
+  // 按序号排序
+  records.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
+
+  return records;
+}
+
+/**
+ * 解析 Markdown 表格（备用）
+ */
+function parseMarkdownTable(markdown: string): BorderRecord[] {
+  const records: BorderRecord[] = [];
   const lines = markdown.split("\n").map((l) => l.trim()).filter(Boolean);
 
-  // 尝试匹配表格格式
-  // MinerU 会将 PDF 表格转为 Markdown 表格格式
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // 匹配表格行（单行格式）
-    // | 序号 | 类型 | 日期 | 证件名 | 证件号 | 口岸 |
+    // 匹配 Markdown 表格行
     const tableMatch = line.match(
       /^\|\s*(\d+)\s*\|\s*(出境|入境)\s*\|\s*(\d{4}-\d{2}-\d{2})\s*\|\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|/,
     );
@@ -234,47 +320,16 @@ export function extractRecordsFromMarkdown(markdown: string): BorderRecord[] {
         documentNumber: documentNumber.trim(),
         port: port.trim(),
       });
-      continue;
-    }
-
-    // 匹配纯文本格式（多行格式在 Markdown 中）
-    // 1. 纯数字行 + 类型行 + 日期行...
-    if (/^\d+$/.test(line) && i + 5 < lines.length) {
-      const id = line;
-      const typeLine = lines[i + 1];
-      const dateLine = lines[i + 2];
-      const docNameLine = lines[i + 3];
-      const docNumLine = lines[i + 4];
-      const portLine = lines[i + 5];
-
-      if (
-        /^(出境|入境)$/.test(typeLine) &&
-        /^\d{4}-\d{2}-\d{2}$/.test(dateLine) &&
-        docNameLine &&
-        docNumLine &&
-        portLine
-      ) {
-        records.push({
-          id,
-          type: typeLine as "出境" | "入境",
-          date: dateLine,
-          documentName: docNameLine,
-          documentNumber: docNumLine,
-          port: portLine,
-        });
-        i += 5; // 跳过已处理的行
-      }
     }
   }
 
-  // 按序号排序
   records.sort((a, b) => parseInt(a.id, 10) - parseInt(b.id, 10));
 
   return records;
 }
 
 /**
- * 从 Markdown 中提取个人信息
+ * 从 Markdown/HTML 中提取个人信息
  */
 export function extractPersonInfoFromMarkdown(markdown: string): QueryPersonInfo {
   const nameMatch = markdown.match(/查询人姓名[：:]\s*(\S+)/);
@@ -283,16 +338,26 @@ export function extractPersonInfoFromMarkdown(markdown: string): QueryPersonInfo
   const idNumberMatch = markdown.match(/公民身份号码[：:]\s*([\d*]+)/);
 
   // 尝试从表格中提取证件号
-  const firstRecordMatch = markdown.match(
+  // 优先从 HTML 表格匹配
+  const htmlTableMatch = markdown.match(
+    /<td[^>]*>\d+<\/td>\s*<td[^>]*>(?:出境|入境)<\/td>\s*<td[^>]*>\d{4}-\d{2}-\d{2}<\/td>\s*<td[^>]*>[^<]+<\/td>\s*<td[^>]*>(\w+)<\/td>/,
+  );
+
+  // 回退到 Markdown 表格
+  const markdownTableMatch = markdown.match(
     /\|\s*\d+\s*\|\s*(?:出境|入境)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|\s*[^|]+\|\s*([^|]+)\|/,
   );
+
+  const documentNumber = htmlTableMatch?.[1]?.trim() || 
+                         markdownTableMatch?.[1]?.trim() || 
+                         "";
 
   return {
     name: nameMatch?.[1] || "未知",
     gender: genderMatch?.[1],
     birthDate: birthDateMatch?.[1],
     idNumber: idNumberMatch?.[1],
-    documentNumber: firstRecordMatch?.[1]?.trim() || "",
+    documentNumber,
   };
 }
 

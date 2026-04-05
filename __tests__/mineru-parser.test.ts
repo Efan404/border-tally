@@ -7,15 +7,18 @@ import {
 import type { BorderRecord } from "@/types";
 
 describe("mineru-parser / extractRecordsFromMarkdown", () => {
-  test("should extract records from markdown table format", () => {
+  test("should extract records from HTML table format (MinerU actual format)", () => {
     const markdown = `
-# 出入境记录
+# 国家移民管理局出入境记录查询结果
 
-| 序号 | 出境/入境 | 出入境日期 | 证件名称 | 证件号码 | 出入境口岸 |
-|------|-----------|------------|----------|----------|------------|
-| 1 | 入境 | 2026-04-04 | 往来港澳通行证 | TEST1234 | 深圳湾口岸 |
-| 2 | 出境 | 2026-04-04 | 往来港澳通行证 | TEST1234 | 深圳湾口岸 |
-| 3 | 入境 | 2026-03-31 | 往来港澳通行证 | TEST1234 | 深圳湾口岸 |
+查询人姓名: 张某某
+
+<table>
+<tr><td>序号</td><td>出境/入境</td><td>出入境日期</td><td>证件名称</td><td>证件号码</td><td>出入境口岸</td><td>航班号</td></tr>
+<tr><td>1</td><td>入境</td><td>2026-04-04</td><td>往来港澳通行证</td><td>TEST1234</td><td>深圳湾口岸</td><td></td></tr>
+<tr><td>2</td><td>出境</td><td>2026-04-04</td><td>往来港澳通行证</td><td>TEST1234</td><td>深圳湾口岸</td><td></td></tr>
+<tr><td>3</td><td>入境</td><td>2026-03-31</td><td>往来港澳通行证</td><td>TEST1234</td><td>深圳湾口岸</td><td></td></tr>
+</table>
 
 第 1 页 / 共 3 页
     `;
@@ -33,23 +36,32 @@ describe("mineru-parser / extractRecordsFromMarkdown", () => {
     });
   });
 
-  test("should extract records from multi-line markdown format", () => {
+  test("should extract records from HTML table with rowspan/colspan attributes", () => {
+    // MinerU 实际返回的格式包含 rowspan/colspan
     const markdown = `
-## 出入境记录
+<table><tr><td rowspan=1 colspan=1>序号</td><td rowspan=1 colspan=1>出境/入境</td><td rowspan=1 colspan=1>出入境日期</td><td rowspan=1 colspan=1>证件名称</td><td rowspan=1 colspan=1>证件号码</td><td rowspan=1 colspan=1>出入境口岸</td></tr>
+<tr><td rowspan=1 colspan=1>1</td><td rowspan=1 colspan=1>入境</td><td rowspan=1 colspan=1>2026-04-04</td><td rowspan=1 colspan=1>往来港澳通行证</td><td rowspan=1 colspan=1>TEST1234</td><td rowspan=1 colspan=1>深圳湾口岸</td></tr>
+<tr><td rowspan=1 colspan=1>2</td><td rowspan=1 colspan=1>出境</td><td rowspan=1 colspan=1>2026-04-04</td><td rowspan=1 colspan=1>往来港澳通行证</td><td rowspan=1 colspan=1>TEST1234</td><td rowspan=1 colspan=1>深圳湾口岸</td></tr>
+</table>
+    `;
 
-1
-入境
-2026-03-27
-往来港澳通行证
-TEST1234
-皇岗口岸
+    const records = extractRecordsFromMarkdown(markdown);
 
-2
-出境
-2026-03-26
-往来港澳通行证
-TEST1234
-福田口岸
+    expect(records).toHaveLength(2);
+    expect(records[0].id).toBe("1");
+    expect(records[1].id).toBe("2");
+  });
+
+  test("should extract records from markdown table format (fallback)", () => {
+    const markdown = `
+# 出入境记录
+
+| 序号 | 出境/入境 | 出入境日期 | 证件名称 | 证件号码 | 出入境口岸 |
+|------|-----------|------------|----------|----------|------------|
+| 1 | 入境 | 2026-04-04 | 往来港澳通行证 | TEST1234 | 深圳湾口岸 |
+| 2 | 出境 | 2026-04-04 | 往来港澳通行证 | TEST1234 | 深圳湾口岸 |
+
+第 1 页 / 共 3 页
     `;
 
     const records = extractRecordsFromMarkdown(markdown);
@@ -58,56 +70,53 @@ TEST1234
     expect(records[0]).toMatchObject({
       id: "1",
       type: "入境",
-      date: "2026-03-27",
-      port: "皇岗口岸",
-    });
-    expect(records[1]).toMatchObject({
-      id: "2",
-      type: "出境",
-      date: "2026-03-26",
-      port: "福田口岸",
+      date: "2026-04-04",
+      documentName: "往来港澳通行证",
+      documentNumber: "TEST1234",
+      port: "深圳湾口岸",
     });
   });
 
-  test("should handle records across page breaks", () => {
+  test("should extract records from multiple HTML tables", () => {
+    // 模拟跨页时多个表格的情况
     const markdown = `
-27
-入境
-2026-03-09
-往来港澳通行证
-TEST1234
-深圳湾口岸
+<table>
+<tr><td>27</td><td>入境</td><td>2026-03-09</td><td>往来港澳通行证</td><td>TEST1234</td><td>深圳湾口岸</td></tr>
+</table>
 
 第 1 页 / 共 3 页
 
-28
-出境
-2026-03-09
-往来港澳通行证
-TEST1234
-深圳湾口岸
-
-65
-入境
-2025-12-28
-往来港澳通行证
-TEST1234
-深圳湾口岸
-
-第 2 页 / 共 3 页
-
-66
-出境
-2025-12-22
-往来港澳通行证
-TEST1234
-福田口岸
+<table>
+<tr><td>28</td><td>出境</td><td>2026-03-09</td><td>往来港澳通行证</td><td>TEST1234</td><td>深圳湾口岸</td></tr>
+<tr><td>29</td><td>入境</td><td>2026-03-07</td><td>往来港澳通行证</td><td>TEST1234</td><td>深圳湾口岸</td></tr>
+</table>
     `;
 
     const records = extractRecordsFromMarkdown(markdown);
 
-    expect(records).toHaveLength(4);
-    expect(records.map((r) => r.id)).toEqual(["27", "28", "65", "66"]);
+    expect(records).toHaveLength(3);
+    expect(records.map((r) => r.id)).toEqual(["27", "28", "29"]);
+  });
+
+  test("should handle MinerU actual output format", () => {
+    // 更接近 MinerU 实际返回的格式
+    const markdown = `
+# 国家移民管理局出入境记录查询结果
+
+<table><tr><td rowspan=1 colspan=1>序号</td><td rowspan=1 colspan=1>出境/入境</td><td rowspan=1 colspan=1>出入境日期</td><td rowspan=1 colspan=1>证件名称</td><td rowspan=1 colspan=1>证件号码</td><td rowspan=1 colspan=1>出入境口岸</td></tr>
+<tr><td rowspan=1 colspan=1>1</td><td rowspan=1 colspan=1>入境</td><td rowspan=1 colspan=1>2026-04-04</td><td rowspan=1 colspan=1>往来港澳通行证</td><td rowspan=1 colspan=1>TEST1234</td><td rowspan=1 colspan=1>深圳湾口岸</td></tr>
+<tr><td rowspan=1 colspan=1>28</td><td rowspan=1 colspan=1>出境</td><td rowspan=1 colspan=1>2026-03-09</td><td rowspan=1 colspan=1>往来港澳通行证</td><td rowspan=1 colspan=1>TEST1234</td><td rowspan=1 colspan=1>深圳湾口岸</td></tr>
+<tr><td rowspan=1 colspan=1>66</td><td rowspan=1 colspan=1>出境</td><td rowspan=1 colspan=1>2025-12-22</td><td rowspan=1 colspan=1>往来港澳通行证</td><td rowspan=1 colspan=1>TEST1234</td><td rowspan=1 colspan=1>福田口岸</td></tr>
+</table>
+    `;
+
+    const records = extractRecordsFromMarkdown(markdown);
+
+    expect(records).toHaveLength(3);
+    expect(records.map((r) => r.id)).toEqual(["1", "28", "66"]);
+    // 验证跨页记录也能正确解析
+    expect(records.find((r) => r.id === "28")).toBeDefined();
+    expect(records.find((r) => r.id === "66")).toBeDefined();
   });
 
   test("should handle empty markdown", () => {

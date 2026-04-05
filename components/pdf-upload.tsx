@@ -8,14 +8,18 @@ import {
   AlertCircle,
   HelpCircle,
   X,
+  Shield,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -29,7 +33,12 @@ import {
   DialogDrawerContent,
   DialogTitle,
   DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { parsePDF } from "@/lib/pdf-parser";
 import { ParseResult } from "@/types";
 
@@ -45,10 +54,15 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
 
   const [error, setError] = useState<string | null>(null);
 
-  // “成功状态融合”所需：记录数 + 友好的文件名
+  // "成功状态融合"所需：记录数 + 友好的文件名
   const [success, setSuccess] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [recordCount, setRecordCount] = useState<number | null>(null);
+
+  // MinerU 相关状态
+  const [useMinerU, setUseMinerU] = useState(false);
+  const [showMinerUConfirm, setShowMinerUConfirm] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const openFilePicker = () => {
     // Ensure the hidden input is reset so selecting the same file re-triggers `onChange`
@@ -71,30 +85,63 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         return;
       }
 
-      setFileName(file.name);
-      setIsLoading(true);
-      setError(null);
-      setSuccess(false);
-      setRecordCount(null);
-
-      try {
-        const result = await parsePDF(file);
-
-        if (result.success) {
-          setSuccess(true);
-          setRecordCount(result.records.length);
-          onParseComplete(result);
-        } else {
-          setError(result.error || "解析失败，请确保上传的是有效的出入境记录");
-        }
-      } catch {
-        setError("文件处理失败，请重试");
-      } finally {
-        setIsLoading(false);
+      // 如果开启了 MinerU，先显示确认对话框
+      if (useMinerU) {
+        setPendingFile(file);
+        setShowMinerUConfirm(true);
+        return;
       }
+
+      await doParseFile(file, false);
     },
-    [onParseComplete],
+    [useMinerU]
   );
+
+  const doParseFile = async (file: File, enableCrossValidation: boolean) => {
+    setFileName(file.name);
+    setIsLoading(true);
+    setError(null);
+    setSuccess(false);
+    setRecordCount(null);
+
+    try {
+      const result = await parsePDF(file, {
+        enableCrossValidation,
+      });
+
+      if (result.success) {
+        setSuccess(true);
+        setRecordCount(result.records.length);
+        onParseComplete(result);
+
+        // 如果有警告，显示给用户
+        if (result.warning) {
+          console.warn("[PDF Upload] Parse warning:", result.warning);
+        }
+      } else {
+        setError(result.error || "解析失败，请确保上传的是有效的出入境记录");
+      }
+    } catch {
+      setError("文件处理失败，请重试");
+    } finally {
+      setIsLoading(false);
+      setPendingFile(null);
+      setShowMinerUConfirm(false);
+    }
+  };
+
+  const handleMinerUConfirm = () => {
+    if (pendingFile) {
+      doParseFile(pendingFile, true);
+    }
+  };
+
+  const handleMinerUCancel = () => {
+    setShowMinerUConfirm(false);
+    setPendingFile(null);
+    // 取消时自动关闭 MinerU 选项
+    setUseMinerU(false);
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -116,7 +163,7 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         await processFile(files[0]);
       }
     },
-    [processFile],
+    [processFile]
   );
 
   const handleFileSelect = useCallback(
@@ -128,7 +175,32 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         e.target.value = "";
       }
     },
-    [processFile],
+    [processFile]
+  );
+
+  // 隐私提示文案
+  const PrivacyTooltip = () => (
+    <div className="space-y-2">
+      <div className="font-medium text-slate-900">隐私保护说明</div>
+      <div className="space-y-1.5 text-slate-700">
+        <p className="flex items-start gap-2">
+          <Shield className="h-3.5 w-3.5 mt-0.5 text-green-600 flex-shrink-0" />
+          <span>
+            <strong>本地解析模式（默认）</strong>
+            <br />
+            所有数据仅在本地浏览器中解析，不会上传到任何服务器
+          </span>
+        </p>
+        <p className="flex items-start gap-2">
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-amber-500 flex-shrink-0" />
+          <span>
+            <strong>增强解析模式</strong>
+            <br />
+            使用 MinerU API 辅助解析，PDF 内容会被上传至 MinerU 服务器处理
+          </span>
+        </p>
+      </div>
+    </div>
   );
 
   return (
@@ -160,7 +232,7 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
                 <div className="mt-2 space-y-2 text-slate-700">
                   <div className="flex gap-2">
                     <div className="mt-0.5 text-slate-500">1.</div>
-                    <div>微信/支付宝 搜索 “出入境记录查询”</div>
+                    <div>微信/支付宝 搜索 "出入境记录查询"</div>
                   </div>
                   <div className="flex gap-2">
                     <div className="mt-0.5 text-slate-500">2.</div>
@@ -179,8 +251,8 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
                     <div>将下载好的 PDF 文件上传</div>
                   </div>
 
-                  <div className="pt-2 text-[11px] text-slate-500">
-                    提示：本网站仅在本地解析 PDF，不会上传到服务器。
+                  <div className="pt-2 border-t border-slate-200 mt-2">
+                    <PrivacyTooltip />
                   </div>
                 </div>
               </HoverCardContent>
@@ -220,7 +292,7 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <div className="mt-0.5 text-slate-500">1.</div>
-                      <div>微信/支付宝 搜索 “出入境记录查询”</div>
+                      <div>微信/支付宝 搜索 "出入境记录查询"</div>
                     </div>
                     <div className="flex gap-2">
                       <div className="mt-0.5 text-slate-500">2.</div>
@@ -240,8 +312,8 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
                     </div>
                   </div>
 
-                  <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                    提示：本网站仅在本地解析 PDF，不会上传到服务器。
+                  <div className="mt-4 rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-600">
+                    <PrivacyTooltip />
                   </div>
                 </div>
               </DialogDrawerContent>
@@ -251,7 +323,52 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
         <CardDescription>支持国家移民管理局导出的 PDF 文件</CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* MinerU 选项 */}
+        <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="use-mineru"
+              checked={useMinerU}
+              onCheckedChange={(checked) => setUseMinerU(checked as boolean)}
+              disabled={isLoading}
+            />
+            <div className="space-y-1 leading-none">
+              <Label
+                htmlFor="use-mineru"
+                className="text-sm font-medium text-slate-700 cursor-pointer"
+              >
+                使用增强解析（MinerU）
+              </Label>
+              <p className="text-xs text-slate-500">
+                可提高复杂格式 PDF 的识别准确率，解析时间约 10-60 秒
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 隐私提示 */}
+        <div
+          className={`rounded-lg border px-3 py-2 text-xs ${
+            useMinerU
+              ? "border-amber-200 bg-amber-50/50 text-amber-800"
+              : "border-green-200 bg-green-50/50 text-green-800"
+          }`}
+        >
+          <div className="flex items-start gap-2">
+            {useMinerU ? (
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            ) : (
+              <Shield className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            )}
+            <span>
+              {useMinerU
+                ? "增强解析模式：PDF 内容将被上传至 MinerU 服务器处理，确认后继续"
+                : "本地解析模式：所有数据仅在浏览器本地处理，不会上传到任何服务器"}
+            </span>
+          </div>
+        </div>
+
         <div
           onClick={() => {
             if (!isLoading) openFilePicker();
@@ -291,7 +408,9 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
           {isLoading ? (
             <div className="flex flex-col items-center gap-2 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <p className="text-sm text-muted-foreground">正在解析文件...</p>
+              <p className="text-sm text-muted-foreground">
+                {useMinerU ? "正在使用增强解析，请稍候..." : "正在解析文件..."}
+              </p>
             </div>
           ) : success ? (
             <div className="flex flex-col gap-4">
@@ -342,6 +461,49 @@ export function PDFUpload({ onParseComplete }: PDFUploadProps) {
           </Alert>
         )}
       </CardContent>
+
+      {/* MinerU 确认对话框 */}
+      <Dialog open={showMinerUConfirm} onOpenChange={setShowMinerUConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              确认使用增强解析？
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p>
+                增强解析会将您的 PDF 文件上传至{" "}
+                <a
+                  href="https://mineru.net/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  MinerU
+                  <ExternalLink className="h-3 w-3" />
+                </a>{" "}
+                服务器进行处理。
+              </p>
+              <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">
+                <p className="font-medium mb-1">请注意：</p>
+                <ul className="list-disc list-inside space-y-1 text-amber-700">
+                  <li>您的出入境记录数据将被上传到第三方服务器</li>
+                  <li>解析过程需要 10-60 秒，请耐心等待</li>
+                  <li>如担心隐私问题，请取消并使用本地解析模式</li>
+                </ul>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-row sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleMinerUCancel} className="flex-1">
+              取消，使用本地解析
+            </Button>
+            <Button onClick={handleMinerUConfirm} className="flex-1">
+              确认上传并解析
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
