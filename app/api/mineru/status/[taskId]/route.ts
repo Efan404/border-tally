@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server";
 
+import { getMaskedMinerUTaskId } from "@/lib/mineru-security";
+
 /**
  * MinerU API 代理 - 查询任务状态
  * 绕过浏览器 CORS 限制
@@ -26,7 +28,7 @@ export async function GET(
     const hasMarkdownUrl = Boolean(data?.data?.markdown_url);
 
     console.info("[MinerU Proxy] Status fetched", {
-      taskId,
+      taskId: getMaskedMinerUTaskId(taskId),
       state,
       hasMarkdownUrl,
       status: response.status,

@@ -1,6 +1,9 @@
 import type { NextRequest } from "next/server";
 
-const ALLOWED_MARKDOWN_HOSTS = new Set(["cdn-mineru.openxlab.org.cn"]);
+import {
+  getMaskedMarkdownPath,
+  isAllowedMinerUMarkdownUrl,
+} from "@/lib/mineru-security";
 
 /**
  * MinerU Markdown 下载代理
@@ -21,10 +24,7 @@ export async function GET(request: NextRequest) {
     return new Response("Invalid markdown url", { status: 400 });
   }
 
-  if (
-    markdownUrl.protocol !== "https:" ||
-    !ALLOWED_MARKDOWN_HOSTS.has(markdownUrl.hostname)
-  ) {
+  if (!isAllowedMinerUMarkdownUrl(markdownUrl)) {
     return new Response("Disallowed markdown host", { status: 403 });
   }
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     console.info("[MinerU Proxy] Markdown fetched", {
       host: markdownUrl.hostname,
-      pathname: markdownUrl.pathname,
+      pathname: getMaskedMarkdownPath(markdownUrl.pathname),
       status: response.status,
       size: markdown.length,
     });
