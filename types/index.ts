@@ -31,6 +31,17 @@ export interface ParseResult {
     endDate: string;
   };
   error?: string;
+  /** 警告信息（如交叉验证不一致） */
+  warning?: string;
+  /** 解析元数据（如交叉验证状态） */
+  meta?: {
+    validationStatus?: "consistent" | "inconsistent";
+    localRecordCount?: number;
+    mineruRecordCount?: number;
+    localOnlyIds?: string[];
+    mineruOnlyIds?: string[];
+    recommendation?: "local" | "mineru" | "manual";
+  };
 }
 
 // 日期范围
