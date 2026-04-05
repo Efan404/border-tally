@@ -6,7 +6,9 @@
 
 import { BorderRecord, QueryPersonInfo } from "@/types";
 
-const MINERU_BASE_URL = "https://mineru.net/api/v1/agent";
+// 使用本地代理 API 绕过 CORS 限制
+const MINERU_PROXY_URL = "/api/mineru";
+// 如需直接调用（服务端），使用：const MINERU_PROXY_URL = "/api/mineru";
 
 interface MinerUParseOptions {
   language?: string;
@@ -76,7 +78,7 @@ async function getUploadUrl(
   fileName: string,
   options: Required<MinerUParseOptions>,
 ): Promise<{ success: boolean; taskId?: string; fileUrl?: string; error?: string }> {
-  const response = await fetch(`${MINERU_BASE_URL}/parse/file`, {
+  const response = await fetch(`${MINERU_PROXY_URL}/upload`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -149,7 +151,7 @@ async function pollTaskResult(
 
   while (Date.now() - startTime < timeout) {
     try {
-      const response = await fetch(`${MINERU_BASE_URL}/parse/${taskId}`);
+      const response = await fetch(`${MINERU_PROXY_URL}/status/${taskId}`);
 
       if (!response.ok) {
         await sleep(interval);
