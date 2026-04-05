@@ -1,13 +1,15 @@
+import type { NextRequest } from "next/server";
+
 /**
  * MinerU API 代理 - 查询任务状态
  * 绕过浏览器 CORS 限制
  */
 export async function GET(
-  request: Request,
-  { params }: { params: { taskId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
-    const { taskId } = params;
+    const { taskId } = await params;
     
     const response = await fetch(
       `https://mineru.net/api/v1/agent/parse/${taskId}`,
